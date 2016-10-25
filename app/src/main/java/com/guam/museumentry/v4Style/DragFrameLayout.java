@@ -17,18 +17,25 @@
 package com.guam.museumentry.v4Style;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.support.v4.widget.ViewDragHelper;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import com.guam.museumentry.beans.SingleLocation;
+import com.guam.museumentry.custom.DImageView;
+import com.guam.museumentry.global.AndroidUtilities;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A {@link FrameLayout} that allows the user to drag and reposition child views.
@@ -36,6 +43,12 @@ import java.util.List;
 public class DragFrameLayout extends FrameLayout {
 
     private static final String TAG = "DragFrameLayout";
+    AtomicInteger counter = new AtomicInteger(0);
+    SparseArray<Rect> beacon = new SparseArray<>();
+    //    ImageView imageView;
+    boolean settle = true;
+    View lastChangedView = null;
+    Rect rect;
     /**
      * The list of {@link View}s that will be draggable.
      */
@@ -46,7 +59,8 @@ public class DragFrameLayout extends FrameLayout {
     private DragFrameLayoutController mDragFrameLayoutController;
     private ViewDragHelper mDragHelper;
     private Drawable imageDrawable;
-//    ImageView imageView;
+    private boolean sizeChanged = false;
+    private Drawable drawableForSavedLocation;
 
     public DragFrameLayout(Context context) {
         super(context);
@@ -70,6 +84,7 @@ public class DragFrameLayout extends FrameLayout {
     }
 
     private void init() {
+        counter.set(1);
         mDragViews = new ArrayList<View>();
         /**
          * Create the {@link ViewDragHelper} and set its callback.
@@ -83,7 +98,18 @@ public class DragFrameLayout extends FrameLayout {
             @Override
             public void onViewPositionChanged(View changedView, int left, int top, int dx, int dy) {
                 super.onViewPositionChanged(changedView, left, top, dx, dy);
-                Log.d(TAG, "onViewPositionChanged() called with: changedView = [" + changedView + "], left = [" + left + "], top = [" + top + "], dx = [" + dx + "], dy = [" + dy + "]");
+                Log.d(TAG, "onViewPositionChanged() called with: " +
+                        "changedView = [" + changedView.getId() + "], left = [" + left + "], top = [" + top + "], " +
+                        "dx = [" + dx + "], dy = [" + dy + "]");
+                if (beacon.indexOfKey(changedView.getId()) > -1) {
+                    Rect rect = beacon.get(changedView.getId());
+                    rect.left = left;
+                    rect.top = top;
+                    beacon.put(changedView.getId(), rect);
+                    Log.w(TAG, "onViewPositionChanged: Pin found and updated");
+                } else {
+                    Log.e(TAG, "onViewPositionChanged: No Pin found");
+                }
             }
 
             @Override
@@ -102,6 +128,8 @@ public class DragFrameLayout extends FrameLayout {
                 if (mDragFrameLayoutController != null) {
                     mDragFrameLayoutController.onDragDrop(capturedChild, true);
                 }
+                Log.d(TAG, "onViewCaptured() called with: capturedChild = [" + capturedChild.getId() + "], activePointerId = [" + activePointerId + "]");
+                settle = true;
             }
 
             @Override
@@ -110,7 +138,19 @@ public class DragFrameLayout extends FrameLayout {
                 if (mDragFrameLayoutController != null) {
                     mDragFrameLayoutController.onDragDrop(releasedChild, false);
                 }
-                Log.d(TAG, "onViewReleased() called with: releasedChild = [" + releasedChild + "], xvel = [" + xvel + "], yvel = [" + yvel + "]");
+                Log.d(TAG, "onViewReleased() called with: releasedChild = [" + releasedChild.getId() + "], xvel = [" + xvel + "], yvel = [" + yvel + "]");
+                if (beacon.indexOfKey(releasedChild.getId()) > -1) {
+                    Rect rect = beacon.get(releasedChild.getId());
+                    mDragHelper.settleCapturedViewAt(rect.left, rect.top);
+//                    if (mDragHelper.settleCapturedViewAt(rect.left, rect.top)) {
+//                        if (!settle)
+//                            settle = mDragHelper.continueSettling(true);
+//                        Log.d(TAG, "onViewReleased: Settled" + settle);
+//                    } else {
+//                        Log.w(TAG, "onViewReleased: Settle captureView failed");
+//                    }
+                    lastChangedView = releasedChild;
+                }
             }
         });
 //        imageView = new ImageView(getContext());
@@ -148,7 +188,12 @@ public class DragFrameLayout extends FrameLayout {
      * @param dragView the {@link View} to make draggable
      */
     public void addDragView(View dragView) {
+        sizeChanged = true;
+        dragView.setId(counter.incrementAndGet());
+        Log.d(TAG, "addDragView: " + dragView.getId());
+        beacon.append(dragView.getId(), new Rect());
         mDragViews.add(dragView);
+        lastChangedView = dragView;
     }
 
     /**
@@ -169,11 +214,53 @@ public class DragFrameLayout extends FrameLayout {
         }
     }
 
+    public void requestForFillData(SingleLocation singleLocation) {
+        if (lastChangedView != null) {
+            Log.d(TAG, "requestForFillData: We got view with id To save :" + lastChangedView);
+            if (beacon.indexOfKey(lastChangedView.getId()) > -1) {
+                Rect rect = beacon.get(lastChangedView.getId());
+                rect.bottom = rect.top + AndroidUtilities.dp(32);
+                rect.right = rect.left + AndroidUtilities.dp(32);
+                singleLocation.setvIndex(lastChangedView.getId());
+                singleLocation.setRightPercentage(rect.right);
+                singleLocation.setBottomPercentage(rect.bottom);
+                ((DImageView) lastChangedView).setImageDrawable(drawableForSavedLocation);
+            } else {
+                Log.w(TAG, "requestForFillData: No ID found for last modified item");
+            }
+        }
+
+    }
+
+    public void setDrawableForSavedLocation(Drawable drawableForSavedLocation) {
+        this.drawableForSavedLocation = drawableForSavedLocation;
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        if (sizeChanged) {
+            if (beacon.size() > 0 && getChildCount() > 0) {
+                for (int i = 0; i < getChildCount(); i++) {
+                    View view = getChildAt(i);
+                    if (view != null && view.getVisibility() != GONE) {
+                        if (beacon.indexOfKey(view.getId()) > -1) {
+                            rect = beacon.get(view.getId());
+                            view.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY));
+                            view.layout(rect.left, rect.top, rect.left + AndroidUtilities.dp(32), rect.top + AndroidUtilities.dp(32));
+                        }
+                    }
+                }
+            }
+            sizeChanged = false;
+        } else {
+            super.onLayout(changed, left, top, right, bottom);
+        }
+    }
+
     /**
      * A controller that will receive the drag events.
      */
     public interface DragFrameLayoutController {
-
         public void onDragDrop(View view, boolean captured);
     }
 }
