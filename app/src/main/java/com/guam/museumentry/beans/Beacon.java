@@ -1,5 +1,7 @@
 package com.guam.museumentry.beans;
 
+import com.estimote.sdk.connection.scanner.ConfigurableDevice;
+
 import io.realm.RealmObject;
 import io.realm.annotations.Ignore;
 import io.realm.annotations.PrimaryKey;
@@ -9,11 +11,22 @@ import io.realm.annotations.PrimaryKey;
  */
 
 public class Beacon extends RealmObject {
+    @Ignore
+    public ConfigurableDevice device;
     @PrimaryKey
     String beaconId;
     String beaconColor;
+    String beaconName;
     @Ignore
     Integer beaconFreq;
+
+    public String getBeaconName() {
+        return beaconName;
+    }
+
+    public void setBeaconName(String beaconName) {
+        this.beaconName = beaconName;
+    }
 
     public String getBeaconId() {
         return beaconId;
@@ -37,5 +50,9 @@ public class Beacon extends RealmObject {
 
     public void setBeaconFreq(Integer beaconFreq) {
         this.beaconFreq = beaconFreq;
+    }
+
+    public void setDevice(ConfigurableDevice device) {
+        this.device = device;
     }
 }

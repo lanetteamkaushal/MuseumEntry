@@ -17,8 +17,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
@@ -50,22 +48,43 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Locale;
 import java.util.Random;
 
 public class AndroidUtilities {
 
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<>();
     private static final String TAG = "AndroidUtilities";
-    private static int prevOrientation = -10;
-    private static boolean waitingForSms = false;
     private static final Object smsLock = new Object();
-
+    private static final String[] projectionPhotos = {
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.BUCKET_ID,
+            MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
+            MediaStore.Images.Media.DATA,
+            MediaStore.Images.Media.DATE_TAKEN,
+            MediaStore.Images.Media.ORIENTATION
+    };
+    private static final String[] projectionVideo = {
+            MediaStore.Video.Media._ID,
+            MediaStore.Video.Media.BUCKET_ID,
+            MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
+            MediaStore.Video.Media.DATA,
+            MediaStore.Video.Media.DATE_TAKEN
+    };
+    private static final String[] projectionCommon = {
+            MediaStore.Files.FileColumns._ID,
+            MediaStore.Images.Media.BUCKET_ID,
+            MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
+            MediaStore.Files.FileColumns.DATA,
+            MediaStore.Files.FileColumns.DATE_ADDED,
+            MediaStore.Files.FileColumns.MEDIA_TYPE,
+            MediaStore.Files.FileColumns.MIME_TYPE,
+            MediaStore.Files.FileColumns.TITLE,
+            MediaStore.Images.Media.ORIENTATION,
+            MediaStore.Files.FileColumns.MEDIA_TYPE
+    };
     public static int statusBarHeight = 0;
     public static float density = 1;
     public static Point displaySize = new Point();
@@ -73,8 +92,6 @@ public class AndroidUtilities {
     public static DisplayMetrics displayMetrics = new DisplayMetrics();
     public static int leftBaseline;
     public static boolean usingHardwareInput;
-    private static Boolean isTablet = null;
-    private static int adjustOwnerClassGuid = 0;
     public static AlbumEntry allPhotosAlbumEntry;
     public static Random random = new Random();
     public static String NOMEDIA = ".nomedia";
@@ -89,6 +106,10 @@ public class AndroidUtilities {
     public static int chatTextMarginTop = 0;
     public static int chatTextMargin = 0;
     public static int chatTextMarginBottom = 0;
+    private static int prevOrientation = -10;
+    private static boolean waitingForSms = false;
+    private static Boolean isTablet = null;
+    private static int adjustOwnerClassGuid = 0;
     private static TextPaint textPaint;
 
     static {
@@ -224,36 +245,6 @@ public class AndroidUtilities {
         }
         return new File("");
     }
-
-    private static final String[] projectionPhotos = {
-            MediaStore.Images.Media._ID,
-            MediaStore.Images.Media.BUCKET_ID,
-            MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
-            MediaStore.Images.Media.DATA,
-            MediaStore.Images.Media.DATE_TAKEN,
-            MediaStore.Images.Media.ORIENTATION
-    };
-
-    private static final String[] projectionVideo = {
-            MediaStore.Video.Media._ID,
-            MediaStore.Video.Media.BUCKET_ID,
-            MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
-            MediaStore.Video.Media.DATA,
-            MediaStore.Video.Media.DATE_TAKEN
-    };
-
-    private static final String[] projectionCommon = {
-            MediaStore.Files.FileColumns._ID,
-            MediaStore.Images.Media.BUCKET_ID,
-            MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
-            MediaStore.Files.FileColumns.DATA,
-            MediaStore.Files.FileColumns.DATE_ADDED,
-            MediaStore.Files.FileColumns.MEDIA_TYPE,
-            MediaStore.Files.FileColumns.MIME_TYPE,
-            MediaStore.Files.FileColumns.TITLE,
-            MediaStore.Images.Media.ORIENTATION,
-            MediaStore.Files.FileColumns.MEDIA_TYPE
-    };
 
     /***
      * Load Photos and Videos from Gallery and notify it
@@ -576,13 +567,13 @@ public class AndroidUtilities {
                 }
             }
         } catch (Throwable e) {
-            Log.e("tmessages",e.getMessage());
+            Log.e("tmessages", e.getMessage());
         } finally {
             if (cursor != null) {
                 try {
                     cursor.close();
                 } catch (Exception e) {
-                    Log.e("tmessages",e.getMessage());
+                    Log.e("tmessages", e.getMessage());
                 }
             }
         }
@@ -648,20 +639,20 @@ public class AndroidUtilities {
                 }
             }
         } catch (Throwable e) {
-            Log.e("tmessages",e.getMessage());
+            Log.e("tmessages", e.getMessage());
         } finally {
             if (cursor != null) {
                 try {
                     cursor.close();
                 } catch (Exception e) {
-                    Log.e("tmessages",e.getMessage());
+                    Log.e("tmessages", e.getMessage());
                 }
             }
             if (cursor1 != null) {
                 try {
                     cursor1.close();
                 } catch (Exception e) {
-                    Log.e("tmessages",e.getMessage());
+                    Log.e("tmessages", e.getMessage());
                 }
             }
         }
@@ -702,7 +693,7 @@ public class AndroidUtilities {
             destination = new FileOutputStream(destFile);
             destination.getChannel().transferFrom(source.getChannel(), 0, source.getChannel().size());
         } catch (Exception e) {
-            Log.e("tmessages",e.getMessage());
+            Log.e("tmessages", e.getMessage());
             return false;
         } finally {
             if (source != null) {
@@ -715,61 +706,8 @@ public class AndroidUtilities {
         return true;
     }
 
-    public static class AlbumEntry {
-        public int bucketId;
-        public String bucketName;
-        public PhotoEntry coverPhoto;
-        public ArrayList<PhotoEntry> photos = new ArrayList<>();
-        public HashMap<Integer, PhotoEntry> photosByIds = new HashMap<>();
-        public boolean isVideo;
-
-        public AlbumEntry(int bucketId, String bucketName, PhotoEntry coverPhoto, boolean isVideo) {
-            this.bucketId = bucketId;
-            this.bucketName = bucketName;
-            this.coverPhoto = coverPhoto;
-            this.isVideo = isVideo;
-        }
-
-        public void addPhoto(PhotoEntry photoEntry) {
-            photos.add(photoEntry);
-            photosByIds.put(photoEntry.imageId, photoEntry);
-        }
-    }
-
-    public static class PhotoEntry implements Serializable {
-        public int bucketId;
-        public int imageId;
-        public long dateTaken;
-        public String path;
-        public int orientation;
-        public String thumbPath;
-        public String imagePath;
-        public boolean isVideo;
-        public CharSequence caption;
-
-        public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation, boolean isVideo) {
-            this.bucketId = bucketId;
-            this.imageId = imageId;
-            this.dateTaken = dateTaken;
-            this.path = path;
-            this.orientation = orientation;
-            this.isVideo = isVideo;
-        }
-    }
-
-    public static class SearchImage {
-        public String id;
-        public String imageUrl;
-        public String thumbUrl;
-        public String localUrl;
-        public int width;
-        public int height;
-        public int size;
-        public int type;
-        public int date;
-        public String thumbPath;
-        public String imagePath;
-        public CharSequence caption;
+    public static String escapeBracket(String s) {
+        return s.replaceAll("\\[", "").replaceAll("\\]", "");
     }
 
     public static int getPhotoSize() {
@@ -934,7 +872,7 @@ public class AndroidUtilities {
                 return insets.bottom;
             }
         } catch (Exception e) {
-            Log.e("tmessages",e.getMessage());
+            Log.e("tmessages", e.getMessage());
         }
         return 0;
     }
@@ -967,12 +905,11 @@ public class AndroidUtilities {
         }
     }
 
-
     public static int getRandomBW(int min, int max) {
         return random.nextInt(max + 1 - min) + min;
     }
 
-        public static int givemeTotalDownload(String path) {
+    public static int givemeTotalDownload(String path) {
         int no_of_images = 0;
         try {
             int no_of_comma = path.replaceAll("[^,]", "").length();
@@ -1015,7 +952,7 @@ public class AndroidUtilities {
             InputMethodManager inputManager = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
             inputManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
         } catch (Exception e) {
-            Log.e("tmessages",e.getMessage());
+            Log.e("tmessages", e.getMessage());
         }
     }
 
@@ -1100,5 +1037,62 @@ public class AndroidUtilities {
 
         matrix.preScale(sx, sy);
         matrix.preTranslate(tx, ty);
+    }
+
+    public static class AlbumEntry {
+        public int bucketId;
+        public String bucketName;
+        public PhotoEntry coverPhoto;
+        public ArrayList<PhotoEntry> photos = new ArrayList<>();
+        public HashMap<Integer, PhotoEntry> photosByIds = new HashMap<>();
+        public boolean isVideo;
+
+        public AlbumEntry(int bucketId, String bucketName, PhotoEntry coverPhoto, boolean isVideo) {
+            this.bucketId = bucketId;
+            this.bucketName = bucketName;
+            this.coverPhoto = coverPhoto;
+            this.isVideo = isVideo;
+        }
+
+        public void addPhoto(PhotoEntry photoEntry) {
+            photos.add(photoEntry);
+            photosByIds.put(photoEntry.imageId, photoEntry);
+        }
+    }
+
+    public static class PhotoEntry implements Serializable {
+        public int bucketId;
+        public int imageId;
+        public long dateTaken;
+        public String path;
+        public int orientation;
+        public String thumbPath;
+        public String imagePath;
+        public boolean isVideo;
+        public CharSequence caption;
+
+        public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation, boolean isVideo) {
+            this.bucketId = bucketId;
+            this.imageId = imageId;
+            this.dateTaken = dateTaken;
+            this.path = path;
+            this.orientation = orientation;
+            this.isVideo = isVideo;
+        }
+    }
+
+    public static class SearchImage {
+        public String id;
+        public String imageUrl;
+        public String thumbUrl;
+        public String localUrl;
+        public int width;
+        public int height;
+        public int size;
+        public int type;
+        public int date;
+        public String thumbPath;
+        public String imagePath;
+        public CharSequence caption;
     }
 }

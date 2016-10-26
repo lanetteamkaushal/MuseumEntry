@@ -32,5 +32,11 @@
             android:layout_width="wrap_content"
             android:layout_height="48dp"
             android:text="Save" />
+
+        <Button
+            android:id="@+id/btnDeleteAll"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:text="Delete All" />
     </LinearLayout>
 </RelativeLayout>

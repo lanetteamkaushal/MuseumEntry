@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginLeft="16dp"
@@ -10,13 +11,46 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="16sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        tools:text="43fdff0fdfln23403nfsdaf" />
+
+    <TextView
+        android:id="@+id/tvColorTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvBeaconID"
+        android:layout_marginTop="4dp"
+        android:text="@string/color"
+        android:textSize="13sp" />
 
     <TextView
         android:id="@+id/tvBeaconColor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/tvBeaconID"
+        android:layout_marginLeft="4dp"
         android:layout_marginTop="4dp"
+        android:layout_toRightOf="@+id/tvColorTitle"
+        android:textSize="13sp"
+        tools:text="BLUE" />
+
+    <TextView
+        android:id="@+id/tvNameTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvColorTitle"
+        android:layout_marginTop="4dp"
+        android:text="@string/name"
         android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/tvName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tvBeaconColor"
+        android:layout_below="@+id/tvColorTitle"
+        android:layout_marginTop="4dp"
+        android:layout_toRightOf="@+id/tvNameTitle"
+        android:textSize="13sp"
+        tools:text="ICE" />
 </RelativeLayout>

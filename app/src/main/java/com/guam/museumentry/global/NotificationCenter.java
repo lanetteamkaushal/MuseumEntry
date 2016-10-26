@@ -130,31 +130,14 @@ public class NotificationCenter {
     public static final int addClickedInBusinessCard = totalEvents++;
     public static final int ContactAdded = totalEvents++;
     public static final int didRequestForProfilePic = totalEvents++;
-
+    public static int beaconDetailUpdate = totalEvents++;
+    private static volatile NotificationCenter Instance = null;
     private SparseArray<ArrayList<Object>> observers = new SparseArray<>();
     private SparseArray<ArrayList<Object>> removeAfterBroadcast = new SparseArray<>();
     private SparseArray<ArrayList<Object>> addAfterBroadcast = new SparseArray<>();
     private ArrayList<DelayedPost> delayedPosts = new ArrayList<>(10);
-
     private int broadcasting = 0;
     private boolean animationInProgress;
-
-    public interface NotificationCenterDelegate {
-        void didReceivedNotification(int id, Object... args);
-    }
-
-    private class DelayedPost {
-
-        private DelayedPost(int id, Object[] args) {
-            this.id = id;
-            this.args = args;
-        }
-
-        private int id;
-        private Object[] args;
-    }
-
-    private static volatile NotificationCenter Instance = null;
 
     public static NotificationCenter getInstance() {
         NotificationCenter localInstance = Instance;
@@ -277,6 +260,21 @@ public class NotificationCenter {
         ArrayList<Object> objects = observers.get(id);
         if (objects != null) {
             objects.remove(observer);
+        }
+    }
+
+    public interface NotificationCenterDelegate {
+        void didReceivedNotification(int id, Object... args);
+    }
+
+    private class DelayedPost {
+
+        private int id;
+        private Object[] args;
+
+        private DelayedPost(int id, Object[] args) {
+            this.id = id;
+            this.args = args;
         }
     }
 }

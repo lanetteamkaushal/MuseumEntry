@@ -28,7 +28,9 @@ import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 
+import com.guam.museumentry.R;
 import com.guam.museumentry.beans.SingleLocation;
 import com.guam.museumentry.custom.DImageView;
 import com.guam.museumentry.global.AndroidUtilities;
@@ -36,6 +38,9 @@ import com.guam.museumentry.global.AndroidUtilities;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.realm.RealmResults;
+import io.realm.Sort;
 
 /**
  * A {@link FrameLayout} that allows the user to drag and reposition child views.
@@ -49,6 +54,8 @@ public class DragFrameLayout extends FrameLayout {
     boolean settle = true;
     View lastChangedView = null;
     Rect rect;
+    Rect originalRect = new Rect();
+    int image_size = 0;
     /**
      * The list of {@link View}s that will be draggable.
      */
@@ -61,6 +68,7 @@ public class DragFrameLayout extends FrameLayout {
     private Drawable imageDrawable;
     private boolean sizeChanged = false;
     private Drawable drawableForSavedLocation;
+    private RealmResults<SingleLocation> allPins;
 
     public DragFrameLayout(Context context) {
         super(context);
@@ -85,6 +93,7 @@ public class DragFrameLayout extends FrameLayout {
 
     private void init() {
         counter.set(1);
+        image_size = AndroidUtilities.dp(32);
         mDragViews = new ArrayList<View>();
         /**
          * Create the {@link ViewDragHelper} and set its callback.
@@ -154,7 +163,7 @@ public class DragFrameLayout extends FrameLayout {
             }
         });
 //        imageView = new ImageView(getContext());
-//        FrameLayout.LayoutParams layoutParams = new LayoutParams(AndroidUtilities.dp(32), AndroidUtilities.dp(32));
+//        FrameLayout.LayoutParams layoutParams = new LayoutParams(image_size, image_size);
 //        layoutParams.gravity = Gravity.CENTER;
 //        imageView.setOnTouchListener(new OnTouchListener() {
 //            @Override
@@ -196,6 +205,14 @@ public class DragFrameLayout extends FrameLayout {
         lastChangedView = dragView;
     }
 
+    private void addDragView(View dragView, Rect rect, int index) {
+        Log.d(TAG, "addDragView: " + index);
+        beacon.append(dragView.getId(), rect);
+        mDragViews.add(dragView);
+        lastChangedView = dragView;
+        dragView.setId(index);
+    }
+
     /**
      * Sets the {@link DragFrameLayoutController} that will receive the drag events.
      *
@@ -219,17 +236,21 @@ public class DragFrameLayout extends FrameLayout {
             Log.d(TAG, "requestForFillData: We got view with id To save :" + lastChangedView);
             if (beacon.indexOfKey(lastChangedView.getId()) > -1) {
                 Rect rect = beacon.get(lastChangedView.getId());
-                rect.bottom = rect.top + AndroidUtilities.dp(32);
-                rect.right = rect.left + AndroidUtilities.dp(32);
+                rect.bottom = rect.top + image_size;
+                rect.right = rect.left + image_size;
                 singleLocation.setvIndex(lastChangedView.getId());
-                singleLocation.setRightPercentage(rect.right);
-                singleLocation.setBottomPercentage(rect.bottom);
+                singleLocation.setRightPercentage(rect.right / ((float) originalRect.width() / 100));
+                singleLocation.setBottomPercentage(rect.bottom / ((float) originalRect.height() / 100));
+                singleLocation.setSaved(true);
                 ((DImageView) lastChangedView).setImageDrawable(drawableForSavedLocation);
             } else {
                 Log.w(TAG, "requestForFillData: No ID found for last modified item");
             }
         }
+    }
 
+    public int totalViewCount() {
+        return beacon.size();
     }
 
     public void setDrawableForSavedLocation(Drawable drawableForSavedLocation) {
@@ -239,14 +260,15 @@ public class DragFrameLayout extends FrameLayout {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         if (sizeChanged) {
+//        if (changed) {
             if (beacon.size() > 0 && getChildCount() > 0) {
                 for (int i = 0; i < getChildCount(); i++) {
                     View view = getChildAt(i);
                     if (view != null && view.getVisibility() != GONE) {
                         if (beacon.indexOfKey(view.getId()) > -1) {
                             rect = beacon.get(view.getId());
-                            view.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY));
-                            view.layout(rect.left, rect.top, rect.left + AndroidUtilities.dp(32), rect.top + AndroidUtilities.dp(32));
+                            view.measure(MeasureSpec.makeMeasureSpec(image_size, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(image_size, MeasureSpec.EXACTLY));
+                            view.layout(rect.left, rect.top, rect.left + image_size, rect.top + image_size);
                         }
                     }
                 }
@@ -254,6 +276,46 @@ public class DragFrameLayout extends FrameLayout {
             sizeChanged = false;
         } else {
             super.onLayout(changed, left, top, right, bottom);
+        }
+        if (changed) {
+            originalRect.set(left, top, right, bottom);
+            Log.d(TAG, "onLayout() called with: changed = [" + changed + "], left = [" + left + "], top = [" + top + "], right = [" + right + "], bottom = [" + bottom + "]");
+            if (allPins.size() > 0) {
+                addViews();
+            }
+        }
+    }
+
+    public void addViews() {
+        for (int i = 0; i < allPins.size(); i++) {
+            SingleLocation singleLocation = allPins.get(i);
+            DImageView iv_sticker = new DImageView(getContext());
+            iv_sticker.setId(singleLocation.getvIndex());
+            iv_sticker.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_location));
+            iv_sticker.setScaleType(ImageView.ScaleType.FIT_END);
+            FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(AndroidUtilities.dp(32), AndroidUtilities.dp(32));
+
+            Rect rect = new Rect();
+            rect.right = Math.round(originalRect.width() * (singleLocation.getRightPercentage() / 100));
+            rect.bottom = Math.round(originalRect.height() * (singleLocation.getBottomPercentage() / 100));
+            rect.left = rect.right - image_size;
+            rect.top = rect.bottom - image_size;
+            Log.d(TAG, "addViews: " + rect.toString());
+//            iv_sticker.setTranslationX(rect.left);
+//            iv_sticker.setTranslationY(rect.top);
+            addView(iv_sticker, layoutParams);
+            addDragView(iv_sticker, rect, singleLocation.getvIndex());
+        }
+        int lastIndex = allPins.sort("vIndex", Sort.ASCENDING).last().getvIndex();
+        counter.set(lastIndex);
+        sizeChanged = true;
+        invalidate();
+    }
+
+    public void addViewDirectly(RealmResults<SingleLocation> allPins) {
+        this.allPins = allPins;
+        if (originalRect.height() > 0) {
+            addViews();
         }
     }
 

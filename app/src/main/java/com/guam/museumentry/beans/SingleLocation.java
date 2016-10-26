@@ -27,6 +27,7 @@ public class SingleLocation extends RealmObject implements Parcelable {
     String userName;
     float rightPercentage;
     float bottomPercentage;
+    boolean isSaved;
 
     public SingleLocation() {
     }
@@ -89,5 +90,13 @@ public class SingleLocation extends RealmObject implements Parcelable {
         dest.writeString(this.userName);
         dest.writeFloat(this.rightPercentage);
         dest.writeFloat(this.bottomPercentage);
+    }
+
+    public boolean isSaved() {
+        return isSaved;
+    }
+
+    public void setSaved(boolean saved) {
+        isSaved = saved;
     }
 }
