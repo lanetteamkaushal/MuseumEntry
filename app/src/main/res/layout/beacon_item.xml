@@ -53,4 +53,19 @@
         android:layout_toRightOf="@+id/tvNameTitle"
         android:textSize="13sp"
         tools:text="ICE" />
+
+    <TextView
+        android:id="@+id/tvEstimateTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvNameTitle"
+        android:layout_marginTop="4dp"
+        android:text="@string/estimated_distance" />
+
+    <TextView
+        android:id="@+id/tvDistance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvName"
+        android:layout_toRightOf="@+id/tvEstimateTitle" />
 </RelativeLayout>

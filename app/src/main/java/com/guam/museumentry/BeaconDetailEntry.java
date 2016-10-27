@@ -3,10 +3,12 @@ package com.guam.museumentry;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -17,6 +19,12 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.estimote.sdk.connection.DeviceConnection;
 import com.estimote.sdk.connection.DeviceConnectionCallback;
 import com.estimote.sdk.connection.DeviceConnectionProvider;
@@ -25,6 +33,7 @@ import com.estimote.sdk.connection.scanner.ConfigurableDevice;
 import com.estimote.sdk.connection.settings.SettingCallback;
 import com.estimote.sdk.connection.settings.SettingsEditor;
 import com.guam.museumentry.beans.Beacon;
+import com.guam.museumentry.beans.SingleLocation;
 import com.guam.museumentry.global.DatabaseUtils;
 
 import java.util.HashMap;
@@ -35,9 +44,9 @@ import io.realm.RealmQuery;
 public class BeaconDetailEntry extends AppCompatActivity implements View.OnClickListener {
 
     public static final HashMap<String, Integer> tagsMajorsMapping = new HashMap<String, Integer>() {{
-        put("Ground Floor", 0);
-        put("First Floor", 1);
-        put("Second Floor", 2);
+        put("Ground Floor", 1);
+        put("First Floor", 2);
+        put("Second Floor", 3);
     }};
     private static final String TAG = "BeaconDetailEntry";
     public RelativeLayout content_beacon_detail_entry;
@@ -58,7 +67,9 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
     int LEVEL_CONNECTED = 2;
     Realm realm;
     String beaconID;
+    int point_index;
     Spinner spFloor;
+    String rightPercent = "", bottomPercent = "";
     private ConfigurableDevice configurableDevice;
     private DeviceConnection connection;
     private DeviceConnectionProvider connectionProvider;
@@ -110,6 +121,28 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
                 setData(beacon);
             }
         });
+        point_index = intent.getIntExtra(BeaconListActivity.EXTRA_POINT_ID, -1);
+        if (point_index < 0) {
+            Log.e(TAG, "onCreate: POINTER ID NOT FOUND");
+            setResult(RESULT_CANCELED);
+            finish();
+        }
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                RealmQuery<SingleLocation> locationRealmQuery = realm.where(SingleLocation.class);
+                locationRealmQuery.equalTo("vIndex", point_index);
+                SingleLocation location = locationRealmQuery.findFirst();
+                if (location != null) {
+                    rightPercent = String.valueOf(location.getRightPercentage());
+                    bottomPercent = String.valueOf(location.getBottomPercentage());
+                } else {
+                    Log.e(TAG, "execute: No POINTER FOUND TO SAVE");
+                    setResult(RESULT_CANCELED);
+                    finish();
+                }
+            }
+        });
         connectionProvider = new DeviceConnectionProvider(this);
         connectToDevice();
     }
@@ -118,6 +151,8 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         tvBeaconID.setText(beacon.getBeaconId());
         tvBeaconColor.setText(beacon.getBeaconColor());
         tvName.setText(beacon.getBeaconName());
+        findViewById(R.id.tvEstimateTitle).setVisibility(View.GONE);
+        findViewById(R.id.tvDistance).setVisibility(View.GONE);
     }
 
     private void connectToDevice() {
@@ -224,11 +259,38 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.cancel();
-                        finish();
+//                        finish();
                     }
                 });
         AlertDialog alert = builder.create();
         alert.show();
+        RequestQueue queue = Volley.newRequestQueue(BeaconDetailEntry.this);
+        String url = String.format("http://lanetteam.com:8041/museum/process.php?add_beacon=true" +
+                        "&beaconName=%1$s&beaconId=%2$s&xPercentage=%3$s&yPercentage=%4$s&floorName=%5$s",
+                Uri.encode(etUserName.getText().toString()), etStickerNo.getText().toString(), rightPercent, bottomPercent, String.valueOf(tagsMajorsMapping.get(spFloor.getSelectedItem())));
+        Log.d(TAG, "displaySuccess URL TO CALL: " + url);
+        StringRequest myReq = new StringRequest(Request.Method.GET,
+                url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d(TAG, "onResponse() called with: response = [" + response + "]");
+                        try {
+                            connectionProvider.destroy();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        setResult(RESULT_OK);
+                        finish();
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.e(TAG, "onErrorResponse() called with: error = [" + error.getMessage() + "]");
+                    }
+                });
+        queue.add(myReq);
     }
 
     private void displayError(DeviceConnectionException e) {
@@ -269,7 +331,29 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
     @Override
     public void onClick(View view) {
         if (view == btnSave) {
-            saveAction();
+            if (dataIsOkay())
+                saveAction();
         }
+    }
+
+    private boolean dataIsOkay() {
+        etUserName.setError(null);
+        etStickerNo.setError(null);
+        if (TextUtils.isEmpty(etUserName.getText().toString())) {
+            etUserName.setError("necessary");
+            return false;
+        }
+        if (TextUtils.isEmpty(etStickerNo.getText().toString())) {
+            etStickerNo.setError("necessary");
+            return false;
+        }
+        if (!TextUtils.isEmpty(etStickerNo.getText().toString())) {
+            int minorID = Integer.parseInt(etStickerNo.getText().toString());
+            if (minorID > 65536 || minorID < 1) {
+                etStickerNo.setError("Sticker Number must between 1 - 655536");
+                return false;
+            }
+        }
+        return true;
     }
 }

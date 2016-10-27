@@ -19,6 +19,16 @@ public class Beacon extends RealmObject {
     String beaconName;
     @Ignore
     Integer beaconFreq;
+    @Ignore
+    Double distance;
+
+    public Double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(Double distance) {
+        this.distance = distance;
+    }
 
     public String getBeaconName() {
         return beaconName;

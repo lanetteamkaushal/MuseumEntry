@@ -15,6 +15,7 @@ import android.widget.ProgressBar;
 
 import com.estimote.sdk.DeviceId;
 import com.estimote.sdk.SystemRequirementsChecker;
+import com.estimote.sdk.Utils;
 import com.estimote.sdk.connection.scanner.ConfigurableDevicesScanner;
 import com.guam.museumentry.adapter.BeaconListAdapter;
 import com.guam.museumentry.beans.Beacon;
@@ -27,7 +28,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import io.realm.Realm;
 import io.realm.RealmQuery;
@@ -37,6 +40,7 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
 
     public static final String EXTRA_SCAN_RESULT_ITEM_DEVICE = "com.Ldeveloperl1985GmailCom.MuseumEntry4Nk.SCAN_RESULT_ITEM_DEVICE";
     public static final String EXTRA_BEACON_ID = "com.Ldeveloperl1985GmailCom.MuseumEntry4Nk.BEACON_ID";
+    public static final String EXTRA_POINT_ID = "com.Ldeveloperl1985GmailCom.MuseumEntry4Nk.POINT_ID";
     public static final Integer RSSI_THRESHOLD = -55;
     private static final String TAG = "BeaconListActivity";
     public LinearLayoutManager llm;
@@ -46,6 +50,8 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
     BeaconListAdapter beaconListAdapter;
     HashMap<String, Integer> queueForFetchDetails = new HashMap<>();
     ProgressBar pbBluetoothSearch;
+    Set<String> beaconIds = new HashSet<>();
+    int id_to_pass = 0;
     private ConfigurableDevicesScanner devicesScanner;
     private Realm realm;
     private Button btnScan;
@@ -68,8 +74,11 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
         animation.setDuration(5000); //in milliseconds
         animation.setInterpolator(new DecelerateInterpolator());
         animation.start();
-
-
+        id_to_pass = getIntent().getIntExtra("id_to_pass", -1);
+        if (id_to_pass < 0) {
+            setResult(RESULT_CANCELED);
+            finish();
+        }
     }
 
     @Override
@@ -92,12 +101,16 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
                 if (!list.isEmpty()) {
                     for (int i = 0; i < list.size(); i++) {
                         ConfigurableDevicesScanner.ScanResultItem item = list.get(i);
-                        if (item.rssi > RSSI_THRESHOLD) {
+//                        if (item.rssi > RSSI_THRESHOLD) {
+                        if (beaconIds.add(item.device.deviceId.toHexString())) {
                             beaconItem = new Beacon();
                             beaconItem.setBeaconId(AndroidUtilities.escapeBracket(item.device.deviceId.toString()));
                             beaconItem.setBeaconFreq(item.rssi);
                             beaconItem.setDevice(item.device);
+                            beaconItem.setDistance(Utils.computeAccuracy(item));
                             beacons.add(beaconItem);
+
+//                            }
                         }
                     }
                     if (beacons.size() > 0) {
@@ -151,6 +164,7 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
                                 Intent intent = new Intent(BeaconListActivity.this, BeaconDetailEntry.class);
                                 intent.putExtra(EXTRA_SCAN_RESULT_ITEM_DEVICE, beacon.device);
                                 intent.putExtra(EXTRA_BEACON_ID, beacon.getBeaconId());
+                                intent.putExtra(EXTRA_POINT_ID, id_to_pass);
                                 startActivity(intent);
                             }
                         });
@@ -206,6 +220,7 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
                     });
 
                 }
+                queueForFetchDetails.remove(beacon);
             }
         }
     }
@@ -215,6 +230,7 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
         if (view == btnScan) {
             btnScan.setVisibility(View.GONE);
             beacons.clear();
+            beaconIds.clear();
             if (beaconListAdapter != null) {
                 beaconListAdapter.notifyDataSetChanged();
             }

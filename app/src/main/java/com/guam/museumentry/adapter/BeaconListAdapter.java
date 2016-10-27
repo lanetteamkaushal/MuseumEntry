@@ -52,6 +52,7 @@ public class BeaconListAdapter extends RecyclerView.Adapter<BeaconListAdapter.Be
     public void onBindViewHolder(BeaconViewHolder holder, int position) {
         Beacon beacon = beacons.get(position);
         holder.tvBeaconID.setText(beacon.getBeaconId());
+        holder.tvDistance.setText(String.valueOf(beacon.getDistance()));
         if (!TextUtils.isEmpty(beacon.getBeaconColor())) {
             holder.tvBeaconColor.setText(beacon.getBeaconColor());
             holder.tvName.setText(beacon.getBeaconName());
@@ -78,12 +79,14 @@ public class BeaconListAdapter extends RecyclerView.Adapter<BeaconListAdapter.Be
         TextView tvBeaconID;
         TextView tvBeaconColor;
         TextView tvName;
+        TextView tvDistance;
 
         public BeaconViewHolder(View itemView) {
             super(itemView);
             tvBeaconID = (TextView) itemView.findViewById(R.id.tvBeaconID);
             tvBeaconColor = (TextView) itemView.findViewById(R.id.tvBeaconColor);
             tvName = (TextView) itemView.findViewById(R.id.tvName);
+            tvDistance = (TextView) itemView.findViewById(R.id.tvDistance);
         }
     }
 }

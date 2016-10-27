@@ -11,4 +11,5 @@
     <string name="please_wait">Please wait.</string>
     <string name="disconnect">Waiting for Connection</string>
     <string name="connect">Connected</string>
+    <string name="estimated_distance">Estimated Distance :</string>
 </resources>
