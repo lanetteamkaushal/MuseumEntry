@@ -21,6 +21,8 @@ public class Beacon extends RealmObject {
     Integer beaconFreq;
     @Ignore
     Double distance;
+    private Integer majorID;
+    private Integer minorID;
 
     public Double getDistance() {
         return distance;
@@ -64,5 +66,21 @@ public class Beacon extends RealmObject {
 
     public void setDevice(ConfigurableDevice device) {
         this.device = device;
+    }
+
+    public Integer getMajorID() {
+        return majorID;
+    }
+
+    public void setMajorID(Integer majorID) {
+        this.majorID = majorID;
+    }
+
+    public Integer getMinorID() {
+        return minorID;
+    }
+
+    public void setMinorID(Integer minorID) {
+        this.minorID = minorID;
     }
 }

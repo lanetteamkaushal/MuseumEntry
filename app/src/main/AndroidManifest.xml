@@ -25,11 +25,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".BeaconListActivity" />
+        <activity
+            android:name=".BeaconListActivity"
+            android:label="@string/list_of_beacons" />
         <activity
             android:name=".BeaconDetailEntry"
             android:label="@string/title_activity_beacon_detail_entry"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>

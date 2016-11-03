@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import io.realm.RealmObject;
+import io.realm.annotations.PrimaryKey;
 
 /**
  * Created by lcom75 on 25/10/16.
@@ -22,6 +23,10 @@ public class SingleLocation extends RealmObject implements Parcelable {
             return new SingleLocation[size];
         }
     };
+
+    int assignedIndex;
+    int floorNumber;
+    @PrimaryKey
     int vIndex;
     String beaconID;
     String userName;
@@ -98,5 +103,21 @@ public class SingleLocation extends RealmObject implements Parcelable {
 
     public void setSaved(boolean saved) {
         isSaved = saved;
+    }
+
+    public int getAssignedIndex() {
+        return assignedIndex;
+    }
+
+    public void setAssignedIndex(int assignedIndex) {
+        this.assignedIndex = assignedIndex;
+    }
+
+    public int getFloorNumber() {
+        return floorNumber;
+    }
+
+    public void setFloorNumber(int floorNumber) {
+        this.floorNumber = floorNumber;
     }
 }

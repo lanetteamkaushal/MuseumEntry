@@ -10,13 +10,15 @@ import android.util.AttributeSet;
 import android.widget.ImageView;
 
 import com.guam.museumentry.global.AndroidUtilities;
+import com.guam.museumentry.global.NotificationCenter;
 
 /**
  * Created by lcom75 on 25/10/16.
  */
 
-public class DImageView extends ImageView {
+public class DImageView extends ImageView implements NotificationCenter.NotificationCenterDelegate {
     Paint debugPaint = null;
+    boolean isSelected = false;
 
     public DImageView(Context context) {
         super(context);
@@ -41,9 +43,9 @@ public class DImageView extends ImageView {
 
     private void init() {
         debugPaint = new Paint();
-        debugPaint.setColor(Color.YELLOW);
+        debugPaint.setColor(Color.RED);
         debugPaint.setStyle(Paint.Style.STROKE);
-        debugPaint.setStrokeWidth(AndroidUtilities.dp(1));
+        debugPaint.setStrokeWidth(AndroidUtilities.dp(2));
     }
 
     @Override
@@ -54,8 +56,35 @@ public class DImageView extends ImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         if (getHeight() > 0) {
-            canvas.drawRect(getLeft(), getTop(), getRight(), getBottom(), debugPaint);
+            if (isSelected) {
+                canvas.drawRect(getLeft(), getTop(), getRight(), getBottom(), debugPaint);
+            }
         }
         super.onDraw(canvas);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.beaconPinSelected);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.beaconPinSelected);
+    }
+
+    @Override
+    public void didReceivedNotification(int id, Object... args) {
+        if (id == NotificationCenter.beaconPinSelected) {
+            int idToSelect = (int) args[0];
+            if (idToSelect == getId()) {
+                isSelected = true;
+            } else {
+                isSelected = false;
+            }
+            invalidate();
+        }
     }
 }

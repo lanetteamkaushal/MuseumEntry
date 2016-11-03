@@ -68,6 +68,8 @@ public class DatabaseUtils {
                 RealmQuery<Beacon> query = realm.where(Beacon.class);
                 query.equalTo("beaconId", AndroidUtilities.escapeBracket(identifier.toString()));
                 final Beacon result = query.findFirst();
+                result.setMajorID(beaconInfo.major);
+                result.setMinorID(beaconInfo.minor);
                 result.setBeaconColor(beaconInfo.color.text);
                 result.setBeaconName(beaconInfo.name);
                 realm.copyToRealm(result);

@@ -9,7 +9,9 @@ import android.content.Intent;
 import android.os.Handler;
 
 import com.estimote.sdk.BeaconManager;
+import com.facebook.stetho.Stetho;
 import com.guam.museumentry.MainActivity;
+import com.uphyca.stetho_realm.RealmInspectorModulesProvider;
 
 import io.realm.Realm;
 
@@ -28,6 +30,12 @@ public class GlobalApplication extends Application {
         final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         cacheSize = maxMemory / 8;
         Realm.init(this);
+
+        Stetho.initialize(
+                Stetho.newInitializerBuilder(this)
+                        .enableDumpapp(Stetho.defaultDumperPluginsProvider(this))
+                        .enableWebKitInspector(RealmInspectorModulesProvider.builder(this).build())
+                        .build());
 //        beaconManager = new BeaconManager(getApplicationContext());
 //        beaconManager.connect(new BeaconManager.ServiceReadyCallback() {
 //            @Override

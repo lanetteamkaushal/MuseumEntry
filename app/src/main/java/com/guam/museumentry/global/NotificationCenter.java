@@ -131,6 +131,7 @@ public class NotificationCenter {
     public static final int ContactAdded = totalEvents++;
     public static final int didRequestForProfilePic = totalEvents++;
     public static int beaconDetailUpdate = totalEvents++;
+    public static int beaconPinSelected = totalEvents++;
     private static volatile NotificationCenter Instance = null;
     private SparseArray<ArrayList<Object>> observers = new SparseArray<>();
     private SparseArray<ArrayList<Object>> removeAfterBroadcast = new SparseArray<>();

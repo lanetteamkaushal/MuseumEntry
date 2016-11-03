@@ -94,7 +94,6 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
     private void scanForDevices() {
         devicesScanner.scanForDevices(new ConfigurableDevicesScanner.ScannerCallback() {
 
-
             @Override
             public void onDevicesFound(List<ConfigurableDevicesScanner.ScanResultItem> list) {
 //                    devicesCountTextView.setText(getString(R.string.detected_devices) + ": " + String.valueOf(list.size()));

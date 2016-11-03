@@ -30,25 +30,33 @@ import com.estimote.sdk.connection.DeviceConnectionCallback;
 import com.estimote.sdk.connection.DeviceConnectionProvider;
 import com.estimote.sdk.connection.exceptions.DeviceConnectionException;
 import com.estimote.sdk.connection.scanner.ConfigurableDevice;
+import com.estimote.sdk.connection.settings.CallbackHandler;
 import com.estimote.sdk.connection.settings.SettingCallback;
 import com.estimote.sdk.connection.settings.SettingsEditor;
 import com.guam.museumentry.beans.Beacon;
 import com.guam.museumentry.beans.SingleLocation;
 import com.guam.museumentry.global.DatabaseUtils;
 
-import java.util.HashMap;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmQuery;
 
 public class BeaconDetailEntry extends AppCompatActivity implements View.OnClickListener {
 
-    public static final HashMap<String, Integer> tagsMajorsMapping = new HashMap<String, Integer>() {{
-        put("Ground Floor", 1);
-        put("First Floor", 2);
-        put("Second Floor", 3);
+    public static final ArrayList<Integer> tagsFloorsIds = new ArrayList<Integer>(3) {{
+        add(1);
+        add(2);
+        add(3);
     }};
     private static final String TAG = "BeaconDetailEntry";
+    public ArrayList<String> tagsFloors = new ArrayList<String>(3) {{
+        add("Ground Floor");
+        add("First Floor");
+        add("Second Floor");
+    }};
     public RelativeLayout content_beacon_detail_entry;
     public RelativeLayout rlEditSection;
     public TextView tvUserNameTitle;
@@ -74,6 +82,9 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
     private DeviceConnection connection;
     private DeviceConnectionProvider connectionProvider;
     private ProgressDialog progressDialog;
+    private ArrayAdapter<String> adapterTags;
+    private SingleLocation location = null;
+    private CallbackHandler handler;
 
     private void bindViews() {
         tvBeaconID = (TextView) findViewById(R.id.tvBeaconID);
@@ -91,9 +102,9 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         tvStatus = (TextView) findViewById(R.id.tvStatus);
         ivStatus = (ImageView) findViewById(R.id.ivStatus);
         spFloor = (Spinner) findViewById(R.id.spFloor);
-        ArrayAdapter<String> adapterTags = new ArrayAdapter<String>(this,
+        adapterTags = new ArrayAdapter<String>(this,
                 android.R.layout.simple_spinner_item,
-                tagsMajorsMapping.keySet().toArray(new String[tagsMajorsMapping.keySet().size()]));
+                tagsFloors);
         adapterTags.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spFloor.setAdapter(adapterTags);
         tvStatus.setText(getResources().getString(R.string.disconnect));
@@ -132,8 +143,18 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
             public void execute(Realm realm) {
                 RealmQuery<SingleLocation> locationRealmQuery = realm.where(SingleLocation.class);
                 locationRealmQuery.equalTo("vIndex", point_index);
-                SingleLocation location = locationRealmQuery.findFirst();
+                location = locationRealmQuery.findFirst();
                 if (location != null) {
+                    if (location.isSaved()) {
+                        int floorNo = location.getFloorNumber();
+                        if (tagsFloorsIds.contains(floorNo) && floorNo > 0) {
+                            if (tagsFloorsIds.size() > (floorNo - 1)) {
+                                spFloor.setSelection((floorNo - 1), true);
+                            }
+                            etUserName.setText(location.getUserName());
+                            etStickerNo.setText(location.getBeaconID());
+                        }
+                    }
                     rightPercent = String.valueOf(location.getRightPercentage());
                     bottomPercent = String.valueOf(location.getBottomPercentage());
                 } else {
@@ -208,6 +229,7 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
             alert.show();
         } else {
             progressDialog = ProgressDialog.show(this, ".", ".");
+            progressDialog.setCanceledOnTouchOutside(true);
             writeSettings();
         }
     }
@@ -221,10 +243,10 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         SettingsEditor edit = connection.edit();
         edit.set(connection.settings.beacon.enable(), true);
         edit.set(connection.settings.beacon.minor(), Integer.valueOf(etStickerNo.getText().toString()));
-        edit.set(connection.settings.beacon.major(), tagsMajorsMapping.get(spFloor.getSelectedItem()));
+        edit.set(connection.settings.beacon.major(), tagsFloorsIds.get(spFloor.getSelectedItemPosition() + 1));
         progressDialog.setTitle(R.string.writing_settings);
         progressDialog.setMessage(getString(R.string.please_wait));
-        edit.commit(new SettingCallback() {
+        handler = edit.commit(new SettingCallback() {
             @Override
             public void onSuccess(Object o) {
                 runOnUiThread(new Runnable() {
@@ -250,6 +272,7 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         });
     }
 
+
     private void displaySuccess() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(R.string.configuration_succeeded);
@@ -265,9 +288,17 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         AlertDialog alert = builder.create();
         alert.show();
         RequestQueue queue = Volley.newRequestQueue(BeaconDetailEntry.this);
-        String url = String.format("http://lanetteam.com:8041/museum/process.php?add_beacon=true" +
+
+        String url = String.format("http://guammuseumapp.com/api/beacon.php?add_beacon=true" +
                         "&beaconName=%1$s&beaconId=%2$s&xPercentage=%3$s&yPercentage=%4$s&floorName=%5$s",
-                Uri.encode(etUserName.getText().toString()), etStickerNo.getText().toString(), rightPercent, bottomPercent, String.valueOf(tagsMajorsMapping.get(spFloor.getSelectedItem())));
+                Uri.encode(etUserName.getText().toString()), etStickerNo.getText().toString(), rightPercent, bottomPercent, String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition())));
+        if (location != null && location.isSaved() && location.getAssignedIndex() > 0) {
+            url = String.format("http://guammuseumapp.com/api/beacon.php?update_beacon=true"
+                            + "&id=%1$s"
+                            + "&beaconName=%2$s&beaconId=%3$s&xPercentage=%4$s&yPercentage=%5$s&floorName=%6$s",
+                    location.getAssignedIndex(),
+                    Uri.encode(etUserName.getText().toString()), etStickerNo.getText().toString(), rightPercent, bottomPercent, String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition())));
+        }
         Log.d(TAG, "displaySuccess URL TO CALL: " + url);
         StringRequest myReq = new StringRequest(Request.Method.GET,
                 url,
@@ -276,6 +307,25 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
                     public void onResponse(String response) {
                         Log.d(TAG, "onResponse() called with: response = [" + response + "]");
                         try {
+                            JSONObject jsonObject = new JSONObject(response);
+                            int assignedId = -1;
+                            if (jsonObject.has("id")) {
+                                assignedId = jsonObject.optInt("id", -1);
+                                final int finalAssignedId = assignedId;
+                                realm.executeTransaction(new Realm.Transaction() {
+                                    @Override
+                                    public void execute(Realm realm) {
+                                        location.setSaved(true);
+                                        location.setFloorNumber(tagsFloorsIds.get(spFloor.getSelectedItemPosition()));
+                                        location.setUserName(etUserName.getText().toString());
+                                        location.setBeaconID(etStickerNo.getText().toString());
+                                        if (finalAssignedId > -1) {
+                                            location.setAssignedIndex(finalAssignedId);
+                                        }
+                                        realm.copyToRealm(location);
+                                    }
+                                });
+                            }
                             connectionProvider.destroy();
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -320,10 +370,8 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         super.onStop();
         if (connection != null && connection.isConnected())
             connection.close();
-        try {
-            connectionProvider.destroy();
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (handler != null) {
+            handler.drop();
         }
     }
 

@@ -15,28 +15,57 @@
         android:layout_gravity="center"
         android:scaleType="fitXY" />
 
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:layout_alignParentBottom="true">
 
-        <Button
+        <android.support.design.widget.FloatingActionButton
             android:id="@+id/btnAddPin"
             android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:text="Add" />
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="16dp"
+            android:layout_toLeftOf="@+id/btnSavePin"
+            android:padding="8dp"
+            android:src="@drawable/ic_add_white_24dp" />
 
-        <Button
+        <android.support.design.widget.FloatingActionButton
             android:id="@+id/btnSavePin"
             android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:text="Save" />
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toLeftOf="@+id/vCenter"
+            android:padding="8dp"
+            android:src="@drawable/ic_save_white_24dp" />
 
-        <Button
+        <View
+            android:id="@+id/vCenter"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            android:layout_centerInParent="true" />
+
+        <android.support.design.widget.FloatingActionButton
             android:id="@+id/btnDeleteAll"
             android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:text="Delete All" />
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="16dp"
+            android:layout_toRightOf="@+id/btnSavePin"
+            android:padding="8dp"
+            android:src="@drawable/ic_delete_white_24dp" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/btnSync"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="16dp"
+            android:layout_toRightOf="@+id/btnDeleteAll"
+            android:padding="8dp"
+            android:src="@drawable/ic_sync_white_24dp"
+            android:visibility="gone" />
+
+    </RelativeLayout>
 </RelativeLayout>
