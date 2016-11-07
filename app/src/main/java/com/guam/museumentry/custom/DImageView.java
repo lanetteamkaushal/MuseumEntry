@@ -55,11 +55,11 @@ public class DImageView extends ImageView implements NotificationCenter.Notifica
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (getHeight() > 0) {
-            if (isSelected) {
-                canvas.drawRect(getLeft(), getTop(), getRight(), getBottom(), debugPaint);
-            }
-        }
+//        if (getHeight() > 0) {
+//            if (isSelected) {
+//                canvas.drawRect(getLeft(), getTop(), getRight(), getBottom(), debugPaint);
+//            }
+//        }
         super.onDraw(canvas);
     }
 

@@ -23,6 +23,8 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -1039,6 +1041,14 @@ public class AndroidUtilities {
         matrix.preTranslate(tx, ty);
     }
 
+    public static boolean isInternet() {
+        ConnectivityManager cm =
+                (ConnectivityManager) GlobalApplication.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null &&
+                activeNetwork.isConnectedOrConnecting();
+    }
+
     public static class AlbumEntry {
         public int bucketId;
         public String bucketName;
@@ -1095,4 +1105,6 @@ public class AndroidUtilities {
         public String imagePath;
         public CharSequence caption;
     }
+
+
 }

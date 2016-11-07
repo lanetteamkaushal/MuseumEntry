@@ -29,6 +29,7 @@ import com.estimote.sdk.connection.DeviceConnection;
 import com.estimote.sdk.connection.DeviceConnectionCallback;
 import com.estimote.sdk.connection.DeviceConnectionProvider;
 import com.estimote.sdk.connection.exceptions.DeviceConnectionException;
+import com.estimote.sdk.connection.exceptions.TimeoutOperationException;
 import com.estimote.sdk.connection.scanner.ConfigurableDevice;
 import com.estimote.sdk.connection.settings.CallbackHandler;
 import com.estimote.sdk.connection.settings.SettingCallback;
@@ -195,7 +196,11 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
 
                         @Override
                         public void onConnectionFailed(DeviceConnectionException e) {
+                            if (e instanceof TimeoutOperationException) {
+                                displayError(getString(R.string.error_timeout));
+                            }
                             Log.d(TAG, e.getMessage());
+                            e.printStackTrace();
                         }
                     });
                 }
@@ -205,10 +210,10 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
 
     private void updateStatus(boolean isConnected) {
         if (isConnected) {
-            tvStatus.setText(getResources().getString(R.string.connect));
+//            tvStatus.setText(getResources().getString(R.string.connect));
             ivStatus.setImageLevel(LEVEL_CONNECTED);
         } else {
-            tvStatus.setText(getResources().getString(R.string.disconnect));
+//            tvStatus.setText(getResources().getString(R.string.disconnect));
             ivStatus.setImageLevel(LEVEL_DISCONNECTED);
         }
     }
@@ -243,7 +248,7 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         SettingsEditor edit = connection.edit();
         edit.set(connection.settings.beacon.enable(), true);
         edit.set(connection.settings.beacon.minor(), Integer.valueOf(etStickerNo.getText().toString()));
-        edit.set(connection.settings.beacon.major(), tagsFloorsIds.get(spFloor.getSelectedItemPosition() + 1));
+        edit.set(connection.settings.beacon.major(), tagsFloorsIds.get(spFloor.getSelectedItemPosition()));
         progressDialog.setTitle(R.string.writing_settings);
         progressDialog.setMessage(getString(R.string.please_wait));
         handler = edit.commit(new SettingCallback() {
@@ -346,6 +351,22 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
     private void displayError(DeviceConnectionException e) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(e.getLocalizedMessage());
+        builder.setCancelable(true);
+        builder.setPositiveButton(
+                R.string.alert_ok,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                        finish();
+                    }
+                });
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    private void displayError(String msg) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(msg);
         builder.setCancelable(true);
         builder.setPositiveButton(
                 R.string.alert_ok,
