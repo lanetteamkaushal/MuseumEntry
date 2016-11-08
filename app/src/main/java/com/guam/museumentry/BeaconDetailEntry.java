@@ -318,6 +318,8 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
                         public void onConnectionFailed(DeviceConnectionException e) {
                             if (e instanceof TimeoutOperationException) {
                                 displayError(getString(R.string.error_timeout), true);
+                            } else if (e instanceof DeviceConnectionException) {
+                                displayError(getString(R.string.error_device_disconnected), true);
                             }
                             Log.d(TAG, e.getMessage());
                             e.printStackTrace();

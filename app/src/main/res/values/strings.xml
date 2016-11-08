@@ -19,4 +19,5 @@
     <string name="low">Low</string>
     <string name="high">High</string>
     <string name="error_sticker_exist">Please select different Sticker ID</string>
+    <string name="error_device_disconnected">Device is disconnected. Please Re-scan</string>
 </resources>

@@ -34,6 +34,7 @@ import com.guam.museumentry.custom.DImageView;
 import com.guam.museumentry.global.AndroidUtilities;
 import com.guam.museumentry.global.BuildVars;
 import com.guam.museumentry.global.DatabaseUtils;
+import com.guam.museumentry.global.Storage;
 import com.guam.museumentry.v4Style.DragFrameLayout;
 
 import org.json.JSONArray;
@@ -60,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<SingleLocation> apiLocations = new ArrayList<>();
     AtomicInteger counter = new AtomicInteger(0);
     private Realm realm;
+    private int VersionCount = 0;
+    private RequestQueue requestQueue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -161,7 +164,35 @@ public class MainActivity extends AppCompatActivity {
         cropImageView.setDrawableForSavedLocation(blueTint);
 
         cropImageView.setBackgroundDrawable(new BitmapDrawable(getResources(), bitmap));
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        requestQueue = Volley.newRequestQueue(this);
+        String checkUrl = BuildVars.API_POINT + "?check_data=true";
+        JsonObjectRequest checkRequest = new JsonObjectRequest(Request.Method.GET, checkUrl, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    VersionCount = response.getJSONArray("museum_data").getJSONObject(0).optInt("count", -1);
+                    if (Storage.getInteger(getApplicationContext(), "versionCount") == VersionCount) {
+                        readyToAddFromDb();
+                    } else {
+                        Storage.putIneger(getApplicationContext(), "versionCount", VersionCount);
+                        setUpData();
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    readyToAddFromDb();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(TAG, "onErrorResponse: " + error.getMessage());
+                readyToAddFromDb();
+            }
+        });
+        requestQueue.add(checkRequest);
+    }
+
+    private void setUpData() {
         String url = BuildVars.API_POINT + "?beacon_data=true";
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
@@ -192,6 +223,9 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void execute(Realm realm) {
                                 SingleLocation dbobject;
+                                //delete all current record and update new record
+                                realm.delete(SingleLocation.class);
+                                //End
                                 for (int i = 0; i < apiLocations.size(); i++) {
                                     SingleLocation singleLocation = apiLocations.get(i);
                                     RealmQuery<SingleLocation> singleLocationRealmQuery = realm.where(SingleLocation.class);
@@ -228,7 +262,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void deleteSingleBeacon(final int id) {
         String deleteUrl = BuildVars.API_POINT + "?delete_beacon=true&id=" + id;
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, deleteUrl, null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
@@ -247,6 +280,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onErrorResponse(VolleyError error) {
                 Log.e(TAG, "onErrorResponse: " + error.getMessage());
+                error.printStackTrace();
             }
         });
         requestQueue.add(jsonObjectRequest);
