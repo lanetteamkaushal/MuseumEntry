@@ -162,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
 
         cropImageView.setBackgroundDrawable(new BitmapDrawable(getResources(), bitmap));
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String url = "http://guammuseumapp.com/api/beacon.php?beacon_data=true";
+        String url = BuildVars.API_POINT + "?beacon_data=true";
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
             @Override
@@ -227,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void deleteSingleBeacon(final int id) {
-        String deleteUrl = "http://guammuseumapp.com/api/beacon.php?delete_beacon=true&id=" + id;
+        String deleteUrl = BuildVars.API_POINT + "?delete_beacon=true&id=" + id;
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, deleteUrl, null, new Response.Listener<JSONObject>() {
             @Override

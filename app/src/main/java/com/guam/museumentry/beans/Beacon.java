@@ -23,6 +23,15 @@ public class Beacon extends RealmObject {
     Double distance;
     private Integer majorID;
     private Integer minorID;
+    private int beaconPower = 200;
+
+    public int getBeaconPower() {
+        return beaconPower;
+    }
+
+    public void setBeaconPower(int beaconPower) {
+        this.beaconPower = beaconPower;
+    }
 
     public Double getDistance() {
         return distance;

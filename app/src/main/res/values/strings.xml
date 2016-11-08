@@ -15,4 +15,8 @@
     <string name="list_of_beacons">List Of Beacons</string>
     <string name="error_timeout">Please Re-scan and select Beacon again</string>
     <string name="error_internet_connection">Internet connection is required</string>
+    <string name="maximum_range">Maximum range</string>
+    <string name="low">Low</string>
+    <string name="high">High</string>
+    <string name="error_sticker_exist">Please select different Sticker ID</string>
 </resources>

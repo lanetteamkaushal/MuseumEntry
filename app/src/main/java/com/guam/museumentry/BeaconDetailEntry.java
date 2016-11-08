@@ -10,12 +10,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.SparseIntArray;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -23,6 +25,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.estimote.sdk.connection.DeviceConnection;
@@ -35,12 +38,15 @@ import com.estimote.sdk.connection.settings.CallbackHandler;
 import com.estimote.sdk.connection.settings.SettingCallback;
 import com.estimote.sdk.connection.settings.SettingsEditor;
 import com.guam.museumentry.beans.Beacon;
+import com.guam.museumentry.beans.Power;
 import com.guam.museumentry.beans.SingleLocation;
+import com.guam.museumentry.global.BuildVars;
 import com.guam.museumentry.global.DatabaseUtils;
 
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 import io.realm.Realm;
 import io.realm.RealmQuery;
@@ -79,6 +85,10 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
     int point_index;
     Spinner spFloor;
     String rightPercent = "", bottomPercent = "";
+    ArrayList<com.guam.museumentry.beans.Power> powerArrayList = new ArrayList<>();
+    SparseIntArray relationPower = new SparseIntArray();
+    TextView tvRange;
+    SeekBar sbPower;
     private ConfigurableDevice configurableDevice;
     private DeviceConnection connection;
     private DeviceConnectionProvider connectionProvider;
@@ -86,6 +96,7 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
     private ArrayAdapter<String> adapterTags;
     private SingleLocation location = null;
     private CallbackHandler handler;
+    private RequestQueue queue;
 
     private void bindViews() {
         tvBeaconID = (TextView) findViewById(R.id.tvBeaconID);
@@ -111,6 +122,89 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         tvStatus.setText(getResources().getString(R.string.disconnect));
         ivStatus.setImageLevel(LEVEL_DISCONNECTED);
         btnSave.setOnClickListener(this);
+        preparePowerData();
+    }
+
+    private void preparePowerData() {
+        com.guam.museumentry.beans.Power power = new com.guam.museumentry.beans.Power();
+        power.setPowerMode(com.guam.museumentry.beans.Power.WEAK);
+        power.power = -40;
+        power.rangeMeter = 1.5f;
+        power.rangeFt = 5;
+        relationPower.put(-40, 0);
+        powerArrayList.add(power);
+        power = new com.guam.museumentry.beans.Power();
+        power.setPowerMode(com.guam.museumentry.beans.Power.WEAK);
+        power.power = -20;
+        power.rangeMeter = 3.5f;
+        power.rangeFt = 12;
+        relationPower.put(-20, 1);
+        powerArrayList.add(power);
+        power = new com.guam.museumentry.beans.Power();
+        power.setPowerMode(com.guam.museumentry.beans.Power.WEAK);
+        power.power = -16;
+        power.rangeMeter = 7f;
+        power.rangeFt = 22;
+        relationPower.put(-16, 2);
+        powerArrayList.add(power);
+        power = new com.guam.museumentry.beans.Power();
+        power.setPowerMode(com.guam.museumentry.beans.Power.WEAK);
+        power.power = -12;
+        power.rangeMeter = 15f;
+        power.rangeFt = 50;
+        relationPower.put(-12, 3);
+        powerArrayList.add(power);
+        power = new com.guam.museumentry.beans.Power();
+        power.setPowerMode(com.guam.museumentry.beans.Power.WEAK);
+        power.power = -8;
+        power.rangeMeter = 30f;
+        power.rangeFt = 100;
+        relationPower.put(-8, 4);
+        powerArrayList.add(power);
+        power = new com.guam.museumentry.beans.Power();
+        power.setPowerMode(com.guam.museumentry.beans.Power.WEAK);
+        power.power = -4;
+        power.rangeMeter = 40f;
+        power.rangeFt = 130;
+        relationPower.put(-4, 5);
+        powerArrayList.add(power);
+        power = new com.guam.museumentry.beans.Power();
+        power.setPowerMode(com.guam.museumentry.beans.Power.WEAK);
+        power.power = 0;
+        power.rangeMeter = 50f;
+        power.rangeFt = 160;
+        relationPower.put(-0, 6);
+        powerArrayList.add(power);
+        power = new com.guam.museumentry.beans.Power();
+        power.setPowerMode(com.guam.museumentry.beans.Power.WEAK);
+        power.power = 4;
+        power.rangeMeter = 70f;
+        power.rangeFt = 230;
+        relationPower.put(4, 7);
+        powerArrayList.add(power);
+        tvRange = (TextView) findViewById(R.id.tvRange);
+        sbPower = (SeekBar) findViewById(R.id.sbPower);
+        sbPower.setMax(7);
+        sbPower.incrementProgressBy(1);
+        sbPower.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                if (i < powerArrayList.size()) {
+                    Power singlePower = powerArrayList.get(i);
+                    tvRange.setText(String.format(Locale.getDefault(), "~%1$2.1fm/%2$2.1fft", singlePower.rangeMeter, singlePower.rangeFt));
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
     }
 
     @Override
@@ -120,6 +214,7 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         bindViews();
+        queue = Volley.newRequestQueue(BeaconDetailEntry.this);
         realm = DatabaseUtils.getInstance().realm;
         Intent intent = getIntent();
         configurableDevice = intent.getParcelableExtra(BeaconListActivity.EXTRA_SCAN_RESULT_ITEM_DEVICE);
@@ -175,6 +270,14 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         tvName.setText(beacon.getBeaconName());
         findViewById(R.id.tvEstimateTitle).setVisibility(View.GONE);
         findViewById(R.id.tvDistance).setVisibility(View.GONE);
+        if (beacon.getBeaconPower() != 200) {
+            if (relationPower.indexOfKey(beacon.getBeaconPower()) > -1) {
+                int position = relationPower.get(beacon.getBeaconPower());
+                sbPower.setProgress(position);
+                Power singlePower = powerArrayList.get(position);
+                tvRange.setText(String.format(Locale.getDefault(), "~%1$2.1fm/%2$2.1fft", singlePower.rangeMeter, singlePower.rangeFt));
+            }
+        }
     }
 
     private void connectToDevice() {
@@ -186,6 +289,23 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
                     connection.connect(new DeviceConnectionCallback() {
                         @Override
                         public void onConnected() {
+                            connection.settings.beacon.transmitPower().get(new SettingCallback<Integer>() {
+                                @Override
+                                public void onSuccess(Integer integer) {
+                                    Log.d(TAG, "Connect Device onSuccess() called with: integer = [" + integer + "]");
+                                    if (relationPower.indexOfKey(integer) > -1) {
+                                        int position = relationPower.get(integer);
+                                        sbPower.setProgress(position);
+                                        Power singlePower = powerArrayList.get(position);
+                                        tvRange.setText(String.format(Locale.getDefault(), "~%1$2.1fm/%2$2.1fft", singlePower.rangeMeter, singlePower.rangeFt));
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(DeviceConnectionException e) {
+
+                                }
+                            });
                             updateStatus(true);
                         }
 
@@ -197,7 +317,7 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
                         @Override
                         public void onConnectionFailed(DeviceConnectionException e) {
                             if (e instanceof TimeoutOperationException) {
-                                displayError(getString(R.string.error_timeout));
+                                displayError(getString(R.string.error_timeout), true);
                             }
                             Log.d(TAG, e.getMessage());
                             e.printStackTrace();
@@ -235,8 +355,37 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         } else {
             progressDialog = ProgressDialog.show(this, ".", ".");
             progressDialog.setCanceledOnTouchOutside(true);
-            writeSettings();
+            checkForTrue();
         }
+    }
+
+    private void checkForTrue() {
+        progressDialog.setTitle(R.string.writing_settings);
+        progressDialog.setMessage(getString(R.string.please_wait));
+        String urlToCall = String.format(BuildVars.API_POINT + "?check_insert=true&beaconId=%1$s&floorName=%2$s", etStickerNo.getText().toString(), String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition())));
+        if (location != null && location.isSaved() && location.getAssignedIndex() > 0) {
+            urlToCall = String.format(BuildVars.API_POINT + "?check_update=true&beaconId=%1$s&floorName=%2$s&id=%3$s",
+                    etStickerNo.getText().toString(), String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition())), location.getAssignedIndex());
+        }
+        Log.d(TAG, "checkForTrue: URL TO CHECK :" + urlToCall);
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, urlToCall, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                progressDialog.dismiss();
+                if (response.optString("status", "false").equalsIgnoreCase("true")) {
+                    writeSettings();
+                } else {
+                    displayError(getString(R.string.error_sticker_exist), false);
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                progressDialog.dismiss();
+                error.printStackTrace();
+            }
+        });
+        queue.add(jsonObjectRequest);
     }
 
     /*
@@ -249,6 +398,7 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         edit.set(connection.settings.beacon.enable(), true);
         edit.set(connection.settings.beacon.minor(), Integer.valueOf(etStickerNo.getText().toString()));
         edit.set(connection.settings.beacon.major(), tagsFloorsIds.get(spFloor.getSelectedItemPosition()));
+        edit.set(connection.settings.beacon.transmitPower(), powerArrayList.get(sbPower.getProgress()).power);
         progressDialog.setTitle(R.string.writing_settings);
         progressDialog.setMessage(getString(R.string.please_wait));
         handler = edit.commit(new SettingCallback() {
@@ -292,13 +442,11 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
                 });
         AlertDialog alert = builder.create();
         alert.show();
-        RequestQueue queue = Volley.newRequestQueue(BeaconDetailEntry.this);
-
-        String url = String.format("http://guammuseumapp.com/api/beacon.php?add_beacon=true" +
+        String url = String.format(BuildVars.API_POINT + "?add_beacon=true" +
                         "&beaconName=%1$s&beaconId=%2$s&xPercentage=%3$s&yPercentage=%4$s&floorName=%5$s",
                 Uri.encode(etUserName.getText().toString()), etStickerNo.getText().toString(), rightPercent, bottomPercent, String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition())));
         if (location != null && location.isSaved() && location.getAssignedIndex() > 0) {
-            url = String.format("http://guammuseumapp.com/api/beacon.php?update_beacon=true"
+            url = String.format(BuildVars.API_POINT + "?update_beacon=true"
                             + "&id=%1$s"
                             + "&beaconName=%2$s&beaconId=%3$s&xPercentage=%4$s&yPercentage=%5$s&floorName=%6$s",
                     location.getAssignedIndex(),
@@ -364,8 +512,8 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         alert.show();
     }
 
-    private void displayError(String msg) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    private void displayError(String msg, final boolean b) {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(msg);
         builder.setCancelable(true);
         builder.setPositiveButton(
@@ -373,7 +521,7 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.cancel();
-                        finish();
+                        if (b) finish();
                     }
                 });
         AlertDialog alert = builder.create();

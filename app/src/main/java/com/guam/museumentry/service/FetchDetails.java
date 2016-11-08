@@ -44,7 +44,7 @@ public class FetchDetails {
 
                         @Override
                         public void failure(EstimoteServerException e) {
-
+                            e.printStackTrace();
                         }
                     });
                 }

@@ -1,122 +1,189 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/content_beacon_detail_entry"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
     android:paddingTop="@dimen/activity_vertical_margin"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context="com.guam.museumentry.BeaconDetailEntry"
     tools:showIn="@layout/activity_beacon_detail_entry">
 
-    <include
-        android:id="@+id/incDetails"
-        layout="@layout/beacon_item" />
-
-
     <RelativeLayout
-        android:id="@+id/rlEditSection"
+        android:id="@+id/content_beacon_detail_entry"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/incDetails"
-        android:layout_marginLeft="16dp"
-        android:layout_marginRight="16dp"
-        android:layout_marginTop="16dp">
+        android:layout_height="wrap_content">
+
+        <include
+            android:id="@+id/incDetails"
+            layout="@layout/beacon_item" />
 
 
-        <EditText
-            android:id="@+id/etUserName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentStart="true"
-            android:layout_below="@+id/tvUserNameTitle"
-            android:layout_marginTop="4dp"
-            android:ems="10"
-            android:hint="User Name"
-            android:inputType="textPersonName" />
-
-        <TextView
-            android:id="@+id/tvStickerNo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignLeft="@+id/etUserName"
-            android:layout_alignStart="@+id/etUserName"
-            android:layout_below="@+id/etUserName"
-            android:layout_marginTop="4dp"
-            android:text="Sticker No." />
-
-        <EditText
-            android:id="@+id/evStickerNo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignLeft="@+id/tvStickerNo"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentRight="true"
-            android:layout_alignStart="@+id/tvStickerNo"
-            android:layout_below="@+id/tvStickerNo"
-            android:layout_marginTop="4dp"
-            android:elevation="1dp"
-            android:hint="Sticker No"
-            android:inputType="numberSigned"
-            android:maxLength="5" />
-
-        <Button
-            android:id="@+id/btnSave"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/evStickerNo"
-            android:layout_centerHorizontal="true"
-            android:layout_marginTop="4dp"
-            android:text="SAVE" />
-
-        <TextView
-            android:id="@+id/tvStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignLeft="@+id/evStickerNo"
-            android:layout_alignStart="@+id/evStickerNo"
-            android:layout_below="@+id/btnSave"
-            android:layout_marginTop="20dp"
-            android:text="@string/disconnect" />
-
-        <ImageView
-            android:id="@+id/ivStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignBottom="@+id/tvStatus"
-            android:layout_alignTop="@+id/tvStatus"
-            android:layout_marginLeft="4dp"
-            android:layout_toRightOf="@+id/tvStatus"
-            app:srcCompat="@drawable/red_drawable" />
-
-        <TextView
-            android:id="@+id/tvFloorTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Floor" />
-
-        <Spinner
-            android:id="@+id/spFloor"
+        <RelativeLayout
+            android:id="@+id/rlEditSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/tvFloorTitle"
-            android:layout_marginTop="4dp" />
+            android:layout_below="@+id/incDetails"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginTop="16dp">
 
-        <TextView
-            android:id="@+id/tvUserNameTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true"
-            android:layout_below="@+id/spFloor"
-            android:layout_marginTop="4dp"
-            android:text="User Friendly Name" />
+
+            <EditText
+                android:id="@+id/etUserName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentStart="true"
+                android:layout_below="@+id/tvUserNameTitle"
+                android:layout_marginTop="@dimen/dimen_top"
+                android:ems="10"
+                android:hint="User Name"
+                android:inputType="textPersonName" />
+
+            <TextView
+                android:id="@+id/tvStickerNo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/etUserName"
+                android:layout_alignStart="@+id/etUserName"
+                android:layout_below="@+id/etUserName"
+                android:layout_marginTop="@dimen/dimen_top"
+                android:text="Sticker No." />
+
+            <EditText
+                android:id="@+id/evStickerNo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/tvStickerNo"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:layout_alignStart="@+id/tvStickerNo"
+                android:layout_below="@+id/tvStickerNo"
+                android:layout_marginTop="@dimen/dimen_top"
+                android:elevation="1dp"
+                android:hint="Sticker No"
+                android:inputType="numberSigned"
+                android:maxLength="5" />
+
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/evStickerNo"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="@dimen/dimen_top"
+                android:text="SAVE" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/evStickerNo"
+                android:layout_alignStart="@+id/evStickerNo"
+                android:layout_below="@+id/btnSave"
+                android:layout_marginTop="20dp"
+                android:text="@string/disconnect" />
+
+            <ImageView
+                android:id="@+id/ivStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/tvStatus"
+                android:layout_alignTop="@+id/tvStatus"
+                android:layout_marginLeft="4dp"
+                android:layout_toRightOf="@+id/tvStatus"
+                app:srcCompat="@drawable/red_drawable" />
+
+            <TextView
+                android:id="@+id/tvFloorTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Floor" />
+
+            <Spinner
+                android:id="@+id/spFloor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/tvFloorTitle"
+                android:layout_marginTop="@dimen/dimen_top" />
+
+            <RelativeLayout
+                android:id="@+id/llBroadCastPower"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/spFloor"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvTitleRange"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_alignParentStart="true"
+                    android:text="@string/maximum_range" />
+
+                <TextView
+                    android:id="@+id/tvRange"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentRight="true"
+                    tools:text="~1.5m / 160ft" />
+
+                <View
+                    android:id="@+id/vDivider1"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_below="@+id/tvTitleRange"
+                    android:layout_marginTop="2dp" />
+
+                <TextView
+                    android:id="@+id/tvLowTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_alignParentStart="true"
+                    android:layout_below="@+id/vDivider1"
+                    android:layout_marginTop="@dimen/dimen_top"
+                    android:text="@string/low" />
+
+                <SeekBar
+                    android:id="@+id/sbPower"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/vDivider1"
+                    android:layout_marginLeft="4dp"
+                    android:layout_marginRight="4dp"
+                    android:layout_marginTop="@dimen/dimen_top"
+                    android:layout_toEndOf="@+id/tvLowTitle"
+                    android:layout_toLeftOf="@+id/tvHighTitle"
+                    android:layout_toRightOf="@+id/tvLowTitle"
+                    android:layout_toStartOf="@+id/tvHighTitle" />
+
+                <TextView
+                    android:id="@+id/tvHighTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentRight="true"
+                    android:layout_below="@+id/vDivider1"
+                    android:layout_marginTop="@dimen/dimen_top"
+                    android:text="@string/high" />
+            </RelativeLayout>
+
+            <TextView
+                android:id="@+id/tvUserNameTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentStart="true"
+                android:layout_below="@+id/llBroadCastPower"
+                android:layout_marginTop="@dimen/dimen_top"
+                android:text="User Friendly Name" />
+        </RelativeLayout>
     </RelativeLayout>
 
-
-</RelativeLayout>
+</android.support.v4.widget.NestedScrollView>

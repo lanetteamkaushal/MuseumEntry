@@ -72,6 +72,7 @@ public class DatabaseUtils {
                 result.setMinorID(beaconInfo.minor);
                 result.setBeaconColor(beaconInfo.color.text);
                 result.setBeaconName(beaconInfo.name);
+                result.setBeaconPower(beaconInfo.settings.broadcastingPower.powerInDbm);
                 realm.copyToRealm(result);
 
             }
