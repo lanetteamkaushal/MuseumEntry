@@ -1,71 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/activity_main"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:keepScreenOn="true"
-    tools:context="com.guam.museumentry.MainActivity">
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:id="@+id/activity_main"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:keepScreenOn="true"
+                tools:context="com.guam.museumentry.MainActivity">
 
     <com.guam.museumentry.v4Style.DragFrameLayout
-        android:id="@+id/CropImageView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@+id/linearLayout"
-        android:layout_gravity="center"
-        android:scaleType="fitXY" />
+            android:id="@+id/CropImageView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/linearLayout"
+            android:layout_gravity="center"
+            android:scaleType="fitXY"/>
 
     <RelativeLayout
-        android:id="@+id/linearLayout"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_alignParentBottom="true">
+            android:id="@+id/linearLayout"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_alignParentBottom="true">
 
         <android.support.design.widget.FloatingActionButton
-            android:id="@+id/btnAddPin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_marginRight="16dp"
-            android:layout_toLeftOf="@+id/btnSavePin"
-            android:padding="8dp"
-            android:src="@drawable/ic_add_white_24dp" />
+                android:id="@+id/btnAddPin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="16dp"
+                android:layout_toLeftOf="@+id/btnSavePin"
+                android:padding="8dp"
+                android:src="@drawable/ic_add_white_24dp"/>
 
         <android.support.design.widget.FloatingActionButton
-            android:id="@+id/btnSavePin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_toLeftOf="@+id/vCenter"
-            android:padding="8dp"
-            android:src="@drawable/ic_save_white_24dp" />
+                android:id="@+id/btnSavePin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toLeftOf="@+id/vCenter"
+                android:padding="8dp"
+                android:src="@drawable/ic_save_white_24dp"/>
 
         <View
-            android:id="@+id/vCenter"
-            android:layout_width="1dp"
-            android:layout_height="1dp"
-            android:layout_centerInParent="true" />
+                android:id="@+id/vCenter"
+                android:layout_width="1dp"
+                android:layout_height="1dp"
+                android:layout_centerInParent="true"/>
 
         <android.support.design.widget.FloatingActionButton
-            android:id="@+id/btnDeleteAll"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_marginLeft="16dp"
-            android:layout_toRightOf="@+id/btnSavePin"
-            android:padding="8dp"
-            android:src="@drawable/ic_delete_white_24dp" />
+                android:id="@+id/btnDeleteAll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="16dp"
+                android:layout_toRightOf="@+id/btnSavePin"
+                android:padding="8dp"
+                android:src="@drawable/ic_delete_white_24dp"/>
 
         <android.support.design.widget.FloatingActionButton
-            android:id="@+id/btnSync"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_marginLeft="16dp"
-            android:layout_toRightOf="@+id/btnDeleteAll"
-            android:padding="8dp"
-            android:src="@drawable/ic_sync_white_24dp"
-            android:visibility="gone" />
+                android:id="@+id/btnSync"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="16dp"
+                android:layout_toRightOf="@+id/btnDeleteAll"
+                android:padding="8dp"
+                app:srcCompat="@drawable/ic_settings_black_24dp"
+                android:visibility="visible"/>
 
     </RelativeLayout>
 </RelativeLayout>

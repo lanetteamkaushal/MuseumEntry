@@ -3,8 +3,10 @@ package com.guam.museumentry;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -17,7 +19,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -88,7 +89,9 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
     ArrayList<com.guam.museumentry.beans.Power> powerArrayList = new ArrayList<>();
     SparseIntArray relationPower = new SparseIntArray();
     TextView tvRange;
-    SeekBar sbPower;
+    SharedPreferences preferenceManager;
+    int isLocationEntry = 0;
+    //    SeekBar sbPower;
     private ConfigurableDevice configurableDevice;
     private DeviceConnection connection;
     private DeviceConnectionProvider connectionProvider;
@@ -97,6 +100,65 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
     private SingleLocation location = null;
     private CallbackHandler handler;
     private RequestQueue queue;
+    private int doubleIt = -4;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_beacon_detail_entry);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        preferenceManager = PreferenceManager.getDefaultSharedPreferences(this);
+        bindViews();
+        queue = Volley.newRequestQueue(BeaconDetailEntry.this);
+        realm = DatabaseUtils.getInstance().realm;
+        Intent intent = getIntent();
+        configurableDevice = intent.getParcelableExtra(BeaconListActivity.EXTRA_SCAN_RESULT_ITEM_DEVICE);
+        beaconID = intent.getStringExtra(BeaconListActivity.EXTRA_BEACON_ID);
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                RealmQuery<Beacon> query = realm.where(Beacon.class);
+                query.equalTo("beaconId", beaconID);
+                Beacon beacon = query.findFirst();
+                setData(beacon);
+            }
+        });
+        point_index = intent.getIntExtra(BeaconListActivity.EXTRA_POINT_ID, -1);
+        if (point_index < 0) {
+            Log.e(TAG, "onCreate: POINTER ID NOT FOUND");
+            setResult(RESULT_CANCELED);
+            finish();
+        }
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                RealmQuery<SingleLocation> locationRealmQuery = realm.where(SingleLocation.class);
+                locationRealmQuery.equalTo("vIndex", point_index);
+                location = locationRealmQuery.findFirst();
+                if (location != null) {
+                    if (location.isSaved()) {
+                        int floorNo = location.getFloorNumber();
+                        if (tagsFloorsIds.contains(floorNo) && floorNo > 0) {
+                            if (tagsFloorsIds.size() > (floorNo - 1)) {
+                                spFloor.setSelection((floorNo - 1), true);
+                            }
+                            etUserName.setText(location.getUserName());
+                            etStickerNo.setText(location.getBeaconID());
+                        }
+                    }
+                    rightPercent = String.valueOf(location.getRightPercentage());
+                    bottomPercent = String.valueOf(location.getBottomPercentage());
+                } else {
+                    Log.e(TAG, "execute: No POINTER FOUND TO SAVE");
+                    setResult(RESULT_CANCELED);
+                    finish();
+                }
+            }
+        });
+        connectionProvider = new DeviceConnectionProvider(this);
+        connectToDevice();
+    }
 
     private void bindViews() {
         tvBeaconID = (TextView) findViewById(R.id.tvBeaconID);
@@ -123,6 +185,72 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         ivStatus.setImageLevel(LEVEL_DISCONNECTED);
         btnSave.setOnClickListener(this);
         preparePowerData();
+    }
+
+    private void setData(Beacon beacon) {
+        tvBeaconID.setText(beacon.getBeaconId());
+        tvBeaconColor.setText(beacon.getBeaconColor());
+        tvName.setText(beacon.getBeaconName());
+        findViewById(R.id.tvEstimateTitle).setVisibility(View.GONE);
+        findViewById(R.id.tvDistance).setVisibility(View.GONE);
+        if (beacon.getBeaconPower() != 200) {
+            if (relationPower.indexOfKey(beacon.getBeaconPower()) > -1) {
+                int position = relationPower.get(beacon.getBeaconPower());
+//                sbPower.setProgress(position);
+                Power singlePower = powerArrayList.get(position);
+                tvRange.setText(String.format(Locale.getDefault(), "~%1$2.1fm/%2$2.1fft", singlePower.rangeMeter, singlePower.rangeFt));
+            }
+        }
+    }
+
+    private void connectToDevice() {
+        if (connection == null || !connection.isConnected()) {
+            connectionProvider.connectToService(new DeviceConnectionProvider.ConnectionProviderCallback() {
+                @Override
+                public void onConnectedToService() {
+                    connection = connectionProvider.getConnection(configurableDevice);
+                    connection.connect(new DeviceConnectionCallback() {
+                        @Override
+                        public void onConnected() {
+                            connection.settings.beacon.transmitPower().get(new SettingCallback<Integer>() {
+                                @Override
+                                public void onSuccess(Integer integer) {
+                                    Log.d(TAG, "Connect Device onSuccess() called with: integer = [" + integer + "]");
+                                    if (relationPower.indexOfKey(integer) > -1) {
+                                        int position = relationPower.get(integer);
+//                                        sbPower.setProgress(position);
+                                        Power singlePower = powerArrayList.get(position);
+                                        tvRange.setText(String.format(Locale.getDefault(), "~%1$2.1fm/%2$2.1fft", singlePower.rangeMeter, singlePower.rangeFt));
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(DeviceConnectionException e) {
+
+                                }
+                            });
+                            updateStatus(true);
+                        }
+
+                        @Override
+                        public void onDisconnected() {
+                            updateStatus(false);
+                        }
+
+                        @Override
+                        public void onConnectionFailed(DeviceConnectionException e) {
+                            if (e instanceof TimeoutOperationException) {
+                                displayError(getString(R.string.error_timeout), true);
+                            } else if (e instanceof DeviceConnectionException) {
+                                displayError(getString(R.string.error_device_disconnected), true);
+                            }
+                            Log.d(TAG, e.getMessage());
+                            e.printStackTrace();
+                        }
+                    });
+                }
+            });
+        }
     }
 
     private void preparePowerData() {
@@ -183,151 +311,44 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         relationPower.put(4, 7);
         powerArrayList.add(power);
         tvRange = (TextView) findViewById(R.id.tvRange);
-        sbPower = (SeekBar) findViewById(R.id.sbPower);
-        sbPower.setMax(7);
-        sbPower.incrementProgressBy(1);
-        sbPower.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                if (i < powerArrayList.size()) {
-                    Power singlePower = powerArrayList.get(i);
-                    tvRange.setText(String.format(Locale.getDefault(), "~%1$2.1fm/%2$2.1fft", singlePower.rangeMeter, singlePower.rangeFt));
-                }
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_beacon_detail_entry);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        bindViews();
-        queue = Volley.newRequestQueue(BeaconDetailEntry.this);
-        realm = DatabaseUtils.getInstance().realm;
-        Intent intent = getIntent();
-        configurableDevice = intent.getParcelableExtra(BeaconListActivity.EXTRA_SCAN_RESULT_ITEM_DEVICE);
-        beaconID = intent.getStringExtra(BeaconListActivity.EXTRA_BEACON_ID);
-        realm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                RealmQuery<Beacon> query = realm.where(Beacon.class);
-                query.equalTo("beaconId", beaconID);
-                Beacon beacon = query.findFirst();
-                setData(beacon);
-            }
-        });
-        point_index = intent.getIntExtra(BeaconListActivity.EXTRA_POINT_ID, -1);
-        if (point_index < 0) {
-            Log.e(TAG, "onCreate: POINTER ID NOT FOUND");
-            setResult(RESULT_CANCELED);
-            finish();
+        String powerFromPref = preferenceManager.getString("power_preference", "-4");
+        doubleIt = Integer.parseInt(powerFromPref);
+        if (relationPower.indexOfKey(doubleIt) > -1) {
+            tvRange.setText(String.format(Locale.getDefault()
+                    , "~%1$2.1fm/%2$2.1fft"
+                    , powerArrayList.get(relationPower.get(doubleIt)).rangeMeter
+                    , powerArrayList.get(relationPower.get(doubleIt)).rangeFt));
+        } else {
+            doubleIt = -4;
+            tvRange.setText(String.format(Locale.getDefault()
+                    , "~%1$2.1fm/%2$2.1fft"
+                    , 40
+                    , 130));
         }
-        realm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                RealmQuery<SingleLocation> locationRealmQuery = realm.where(SingleLocation.class);
-                locationRealmQuery.equalTo("vIndex", point_index);
-                location = locationRealmQuery.findFirst();
-                if (location != null) {
-                    if (location.isSaved()) {
-                        int floorNo = location.getFloorNumber();
-                        if (tagsFloorsIds.contains(floorNo) && floorNo > 0) {
-                            if (tagsFloorsIds.size() > (floorNo - 1)) {
-                                spFloor.setSelection((floorNo - 1), true);
-                            }
-                            etUserName.setText(location.getUserName());
-                            etStickerNo.setText(location.getBeaconID());
-                        }
-                    }
-                    rightPercent = String.valueOf(location.getRightPercentage());
-                    bottomPercent = String.valueOf(location.getBottomPercentage());
-                } else {
-                    Log.e(TAG, "execute: No POINTER FOUND TO SAVE");
-                    setResult(RESULT_CANCELED);
-                    finish();
-                }
-            }
-        });
-        connectionProvider = new DeviceConnectionProvider(this);
-        connectToDevice();
-    }
+        isLocationEntry = preferenceManager.getBoolean("entry_for", false) ? 1 : 0;
 
-    private void setData(Beacon beacon) {
-        tvBeaconID.setText(beacon.getBeaconId());
-        tvBeaconColor.setText(beacon.getBeaconColor());
-        tvName.setText(beacon.getBeaconName());
-        findViewById(R.id.tvEstimateTitle).setVisibility(View.GONE);
-        findViewById(R.id.tvDistance).setVisibility(View.GONE);
-        if (beacon.getBeaconPower() != 200) {
-            if (relationPower.indexOfKey(beacon.getBeaconPower()) > -1) {
-                int position = relationPower.get(beacon.getBeaconPower());
-                sbPower.setProgress(position);
-                Power singlePower = powerArrayList.get(position);
-                tvRange.setText(String.format(Locale.getDefault(), "~%1$2.1fm/%2$2.1fft", singlePower.rangeMeter, singlePower.rangeFt));
-            }
-        }
-    }
-
-    private void connectToDevice() {
-        if (connection == null || !connection.isConnected()) {
-            connectionProvider.connectToService(new DeviceConnectionProvider.ConnectionProviderCallback() {
-                @Override
-                public void onConnectedToService() {
-                    connection = connectionProvider.getConnection(configurableDevice);
-                    connection.connect(new DeviceConnectionCallback() {
-                        @Override
-                        public void onConnected() {
-                            connection.settings.beacon.transmitPower().get(new SettingCallback<Integer>() {
-                                @Override
-                                public void onSuccess(Integer integer) {
-                                    Log.d(TAG, "Connect Device onSuccess() called with: integer = [" + integer + "]");
-                                    if (relationPower.indexOfKey(integer) > -1) {
-                                        int position = relationPower.get(integer);
-                                        sbPower.setProgress(position);
-                                        Power singlePower = powerArrayList.get(position);
-                                        tvRange.setText(String.format(Locale.getDefault(), "~%1$2.1fm/%2$2.1fft", singlePower.rangeMeter, singlePower.rangeFt));
-                                    }
-                                }
-
-                                @Override
-                                public void onFailure(DeviceConnectionException e) {
-
-                                }
-                            });
-                            updateStatus(true);
-                        }
-
-                        @Override
-                        public void onDisconnected() {
-                            updateStatus(false);
-                        }
-
-                        @Override
-                        public void onConnectionFailed(DeviceConnectionException e) {
-                            if (e instanceof TimeoutOperationException) {
-                                displayError(getString(R.string.error_timeout), true);
-                            } else if (e instanceof DeviceConnectionException) {
-                                displayError(getString(R.string.error_device_disconnected), true);
-                            }
-                            Log.d(TAG, e.getMessage());
-                            e.printStackTrace();
-                        }
-                    });
-                }
-            });
-        }
+//        sbPower = (SeekBar) findViewById(R.id.sbPower);
+//        sbPower.setMax(7);
+//        sbPower.incrementProgressBy(1);
+//        sbPower.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+//            @Override
+//            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+//                if (i < powerArrayList.size()) {
+//                    Power singlePower = powerArrayList.get(i);
+//                    tvRange.setText(String.format(Locale.getDefault(), "~%1$2.1fm/%2$2.1fft", singlePower.rangeMeter, singlePower.rangeFt));
+//                }
+//            }
+//
+//            @Override
+//            public void onStartTrackingTouch(SeekBar seekBar) {
+//
+//            }
+//
+//            @Override
+//            public void onStopTrackingTouch(SeekBar seekBar) {
+//
+//            }
+//        });
     }
 
     private void updateStatus(boolean isConnected) {
@@ -338,6 +359,67 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
 //            tvStatus.setText(getResources().getString(R.string.disconnect));
             ivStatus.setImageLevel(LEVEL_DISCONNECTED);
         }
+    }
+
+    private void displayError(String msg, final boolean b) {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(msg);
+        builder.setCancelable(true);
+        builder.setPositiveButton(
+                R.string.alert_ok,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                        if (b) finish();
+                    }
+                });
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (connection != null && connection.isConnected())
+            connection.close();
+        if (handler != null) {
+            handler.drop();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        connectToDevice();
+    }
+
+    @Override
+    public void onClick(View view) {
+        if (view == btnSave) {
+            if (dataIsOkay())
+                saveAction();
+        }
+    }
+
+    private boolean dataIsOkay() {
+        etUserName.setError(null);
+        etStickerNo.setError(null);
+        if (TextUtils.isEmpty(etUserName.getText().toString())) {
+            etUserName.setError("necessary");
+            return false;
+        }
+        if (TextUtils.isEmpty(etStickerNo.getText().toString())) {
+            etStickerNo.setError("necessary");
+            return false;
+        }
+        if (!TextUtils.isEmpty(etStickerNo.getText().toString())) {
+            int minorID = Integer.parseInt(etStickerNo.getText().toString());
+            if (minorID > 65536 || minorID < 1) {
+                etStickerNo.setError("Sticker Number must between 1 - 655536");
+                return false;
+            }
+        }
+        return true;
     }
 
     private void saveAction() {
@@ -400,7 +482,7 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         edit.set(connection.settings.beacon.enable(), true);
         edit.set(connection.settings.beacon.minor(), Integer.valueOf(etStickerNo.getText().toString()));
         edit.set(connection.settings.beacon.major(), tagsFloorsIds.get(spFloor.getSelectedItemPosition()));
-        edit.set(connection.settings.beacon.transmitPower(), powerArrayList.get(sbPower.getProgress()).power);
+        edit.set(connection.settings.beacon.transmitPower(), doubleIt);
         progressDialog.setTitle(R.string.writing_settings);
         progressDialog.setMessage(getString(R.string.please_wait));
         handler = edit.commit(new SettingCallback() {
@@ -429,7 +511,6 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         });
     }
 
-
     private void displaySuccess() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(R.string.configuration_succeeded);
@@ -445,8 +526,10 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
         AlertDialog alert = builder.create();
         alert.show();
         String url = String.format(BuildVars.API_POINT + "?add_beacon=true" +
-                        "&beaconName=%1$s&beaconId=%2$s&xPercentage=%3$s&yPercentage=%4$s&floorName=%5$s",
-                Uri.encode(etUserName.getText().toString()), etStickerNo.getText().toString(), rightPercent, bottomPercent, String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition())));
+                        "&beaconName=%1$s&beaconId=%2$s&xPercentage=%3$s&yPercentage=%4$s&floorName=%5$s&isLocation=%6$s",
+                Uri.encode(etUserName.getText().toString()), etStickerNo.getText().toString(), rightPercent, bottomPercent
+                , String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition()))
+                , isLocationEntry);
         if (location != null && location.isSaved() && location.getAssignedIndex() > 0) {
             url = String.format(BuildVars.API_POINT + "?update_beacon=true"
                             + "&id=%1$s"
@@ -512,67 +595,5 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
                 });
         AlertDialog alert = builder.create();
         alert.show();
-    }
-
-    private void displayError(String msg, final boolean b) {
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage(msg);
-        builder.setCancelable(true);
-        builder.setPositiveButton(
-                R.string.alert_ok,
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                        if (b) finish();
-                    }
-                });
-        AlertDialog alert = builder.create();
-        alert.show();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        connectToDevice();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (connection != null && connection.isConnected())
-            connection.close();
-        if (handler != null) {
-            handler.drop();
-        }
-    }
-
-
-    @Override
-    public void onClick(View view) {
-        if (view == btnSave) {
-            if (dataIsOkay())
-                saveAction();
-        }
-    }
-
-    private boolean dataIsOkay() {
-        etUserName.setError(null);
-        etStickerNo.setError(null);
-        if (TextUtils.isEmpty(etUserName.getText().toString())) {
-            etUserName.setError("necessary");
-            return false;
-        }
-        if (TextUtils.isEmpty(etStickerNo.getText().toString())) {
-            etStickerNo.setError("necessary");
-            return false;
-        }
-        if (!TextUtils.isEmpty(etStickerNo.getText().toString())) {
-            int minorID = Integer.parseInt(etStickerNo.getText().toString());
-            if (minorID > 65536 || minorID < 1) {
-                etStickerNo.setError("Sticker Number must between 1 - 655536");
-                return false;
-            }
-        }
-        return true;
     }
 }

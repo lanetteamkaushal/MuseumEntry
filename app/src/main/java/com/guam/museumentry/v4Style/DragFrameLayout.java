@@ -75,22 +75,6 @@ public class DragFrameLayout extends FrameLayout {
         init();
     }
 
-    public DragFrameLayout(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init();
-    }
-
-    public DragFrameLayout(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init();
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public DragFrameLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-        init();
-    }
-
     private void init() {
         if (!isInEditMode()) {
             image_size = AndroidUtilities.dp(32);
@@ -99,11 +83,6 @@ public class DragFrameLayout extends FrameLayout {
              * Create the {@link ViewDragHelper} and set its callback.
              */
             mDragHelper = ViewDragHelper.create(this, 1.0f, new ViewDragHelper.Callback() {
-                @Override
-                public boolean tryCaptureView(View child, int pointerId) {
-                    return mDragViews.contains(child);
-                }
-
                 @Override
                 public void onViewPositionChanged(View changedView, int left, int top, int dx, int dy) {
                     super.onViewPositionChanged(changedView, left, top, dx, dy);
@@ -119,16 +98,6 @@ public class DragFrameLayout extends FrameLayout {
                     } else {
                         Log.e(TAG, "onViewPositionChanged: No Pin found");
                     }
-                }
-
-                @Override
-                public int clampViewPositionHorizontal(View child, int left, int dx) {
-                    return left;
-                }
-
-                @Override
-                public int clampViewPositionVertical(View child, int top, int dy) {
-                    return top;
                 }
 
                 @Override
@@ -165,6 +134,21 @@ public class DragFrameLayout extends FrameLayout {
                         lastChangedView = releasedChild;
                     }
                 }
+
+                @Override
+                public boolean tryCaptureView(View child, int pointerId) {
+                    return mDragViews.contains(child);
+                }
+
+                @Override
+                public int clampViewPositionHorizontal(View child, int left, int dx) {
+                    return left;
+                }
+
+                @Override
+                public int clampViewPositionVertical(View child, int top, int dy) {
+                    return top;
+                }
             });
 //        imageView = new ImageView(getContext());
 //        FrameLayout.LayoutParams layoutParams = new LayoutParams(image_size, image_size);
@@ -177,6 +161,22 @@ public class DragFrameLayout extends FrameLayout {
 //        });
 //        addView(imageView, layoutParams);
         }
+    }
+
+    public DragFrameLayout(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
+
+    public DragFrameLayout(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        init();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public DragFrameLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
+        init();
     }
 
     @Override
@@ -207,14 +207,6 @@ public class DragFrameLayout extends FrameLayout {
         beacon.append(dragView.getId(), new Rect());
         mDragViews.add(dragView);
         lastChangedView = dragView;
-    }
-
-    private void addDragView(View dragView, Rect rect, int index) {
-        Log.d(TAG, "addDragView: " + index);
-        beacon.append(dragView.getId(), rect);
-        mDragViews.add(dragView);
-        lastChangedView = dragView;
-        dragView.setId(index);
     }
 
     /**
@@ -269,30 +261,35 @@ public class DragFrameLayout extends FrameLayout {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        if (sizeChanged) {
-//        if (changed) {
-            if (beacon.size() > 0 && getChildCount() > 0) {
-                for (int i = 0; i < getChildCount(); i++) {
-                    View view = getChildAt(i);
-                    if (view != null && view.getVisibility() != GONE) {
-                        if (beacon.indexOfKey(view.getId()) > -1) {
-                            rect = beacon.get(view.getId());
-                            view.measure(MeasureSpec.makeMeasureSpec(image_size, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(image_size, MeasureSpec.EXACTLY));
-                            view.layout(rect.left, rect.top, rect.left + image_size, rect.top + image_size);
+
+        if (!isInEditMode()) {
+            if (sizeChanged) {
+                //        if (changed) {
+                if (beacon.size() > 0 && getChildCount() > 0) {
+                    for (int i = 0; i < getChildCount(); i++) {
+                        View view = getChildAt(i);
+                        if (view != null && view.getVisibility() != GONE) {
+                            if (beacon.indexOfKey(view.getId()) > -1) {
+                                rect = beacon.get(view.getId());
+                                view.measure(MeasureSpec.makeMeasureSpec(image_size, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(image_size, MeasureSpec.EXACTLY));
+                                view.layout(rect.left, rect.top, rect.left + image_size, rect.top + image_size);
+                            }
                         }
                     }
                 }
+                sizeChanged = false;
+            } else {
+                super.onLayout(changed, left, top, right, bottom);
             }
-            sizeChanged = false;
+            if (changed) {
+                originalRect.set(left, top, right, bottom);
+                Log.d(TAG, "onLayout() called with: changed = [" + changed + "], left = [" + left + "], top = [" + top + "], right = [" + right + "], bottom = [" + bottom + "]");
+                if (allPins != null && allPins.size() > 0) {
+                    addViews();
+                }
+            }
         } else {
             super.onLayout(changed, left, top, right, bottom);
-        }
-        if (changed) {
-            originalRect.set(left, top, right, bottom);
-            Log.d(TAG, "onLayout() called with: changed = [" + changed + "], left = [" + left + "], top = [" + top + "], right = [" + right + "], bottom = [" + bottom + "]");
-            if (allPins != null && allPins.size() > 0) {
-                addViews();
-            }
         }
     }
 
@@ -318,6 +315,14 @@ public class DragFrameLayout extends FrameLayout {
         }
         sizeChanged = true;
         invalidate();
+    }
+
+    private void addDragView(View dragView, Rect rect, int index) {
+        Log.d(TAG, "addDragView: " + index);
+        beacon.append(dragView.getId(), rect);
+        mDragViews.add(dragView);
+        lastChangedView = dragView;
+        dragView.setId(index);
     }
 
     public void addViewDirectly(RealmResults<SingleLocation> allPins) {

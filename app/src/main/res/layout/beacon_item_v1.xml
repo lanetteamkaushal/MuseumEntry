@@ -55,10 +55,49 @@
             tools:text="ICE"/>
 
     <TextView
+            android:layout_marginTop="4dp"
+            android:layout_below="@+id/tvNameTitle"
+            android:text="@string/floor_no"
+            android:id="@+id/tvFloorTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"/>
+
+    <TextView
+            android:layout_marginTop="4dp"
+            android:layout_toRightOf="@+id/tvFloorTitle"
+            android:layout_alignBottom="@+id/tvFloorTitle"
+            tools:text="32536"
+            android:id="@+id/tvFloor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tvNameTitle"/>
+
+    <TextView
+            android:layout_below="@+id/tvFloorTitle"
+            android:layout_marginTop="4dp"
+            android:id="@+id/tvStickerNoTitle"
+            android:text="@string/sticker_no"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+    <TextView
+            android:layout_marginTop="4dp"
+            android:layout_toRightOf="@+id/tvStickerNoTitle"
+            android:layout_alignBottom="@+id/tvStickerNoTitle"
+            tools:text="32536"
+            android:id="@+id/tvStickerNo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tvFloorTitle"/>
+
+
+    <TextView
             android:id="@+id/tvEstimateTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/tvNameTitle"
+            android:layout_below="@+id/tvStickerNoTitle"
             android:layout_marginTop="4dp"
             android:text="@string/estimated_distance"/>
 
@@ -67,6 +106,7 @@
             android:id="@+id/tvDistance"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/tvName"
+            android:layout_below="@+id/tvStickerNoTitle"
+            android:layout_alignBottom="@+id/tvEstimateTitle"
             android:layout_toRightOf="@+id/tvEstimateTitle"/>
 </RelativeLayout>

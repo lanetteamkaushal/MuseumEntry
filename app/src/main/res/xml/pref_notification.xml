@@ -1,0 +1,22 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- A 'parent' preference, which enables/disables child preferences (below)
+         when checked/unchecked. -->
+    <PreferenceCategory
+            android:title="@string/range_settings">
+        <ListPreference
+                android:key="power_preference"
+                android:title="@string/label_range"
+                android:summary="@string/select_range"
+                android:defaultValue="7m"
+                android:entries="@array/list_pref_range"
+                android:entryValues="@array/list_pref_power"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+            android:title="Entry For">
+        <SwitchPreference
+                android:key="entry_for"
+                android:title="Entry for Location Beacon?"
+                android:defaultValue="false"/>
+    </PreferenceCategory>
+</PreferenceScreen>

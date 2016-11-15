@@ -82,6 +82,12 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.beaconDetailUpdate);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
 
@@ -100,7 +106,6 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
                 if (!list.isEmpty()) {
                     for (int i = 0; i < list.size(); i++) {
                         ConfigurableDevicesScanner.ScanResultItem item = list.get(i);
-//                        if (item.rssi > RSSI_THRESHOLD) {
                         if (beaconIds.add(item.device.deviceId.toHexString())) {
                             beaconItem = new Beacon();
                             beaconItem.setBeaconId(AndroidUtilities.escapeBracket(item.device.deviceId.toString()));
@@ -108,8 +113,6 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
                             beaconItem.setDevice(item.device);
                             beaconItem.setDistance(Utils.computeAccuracy(item));
                             beacons.add(beaconItem);
-
-//                            }
                         }
                     }
                     if (beacons.size() > 0) {
@@ -179,12 +182,6 @@ public class BeaconListActivity extends AppCompatActivity implements Notificatio
                 }
             }
         });
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.beaconDetailUpdate);
     }
 
     @Override

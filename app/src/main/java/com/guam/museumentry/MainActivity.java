@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceActivity;
 import android.provider.Settings;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AlertDialog;
@@ -57,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     Drawable redTint, blueTint;
     Button btnScan;
     Button btnDeleteAll;
+    Button btnSettings;
     boolean doubleBackToExitPressedOnce = false;
     ArrayList<SingleLocation> apiLocations = new ArrayList<>();
     AtomicInteger counter = new AtomicInteger(0);
@@ -152,6 +154,15 @@ public class MainActivity extends AppCompatActivity {
                 cropImageView.addDragView(iv_sticker);//,layoutParams);
             }
         });
+        (findViewById(R.id.btnSync)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent settings = new Intent(MainActivity.this, SettingsActivity.class);
+                settings.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, SettingsActivity.NotificationPreferenceFragment.class.getName());
+                settings.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
+                startActivity(settings);
+            }
+        });
         Drawable normalDrawable = getResources().getDrawable(R.drawable.ic_action_location);
         redTint = DrawableCompat.wrap(normalDrawable);
         DrawableCompat.setTint(redTint, Color.RED);
@@ -190,6 +201,48 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         requestQueue.add(checkRequest);
+    }
+
+    private void setupEstimote() {
+        EstimoteSDK.initialize(applicationContext, BuildConfig.APP_ID, BuildConfig.APP_TOKEN);
+        EstimoteSDK.enableDebugLogging(true);
+    }
+
+    public void deleteSingleBeacon(final int id) {
+        String deleteUrl = BuildVars.API_POINT + "?delete_beacon=true&id=" + id;
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, deleteUrl, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                Log.d(TAG, "onResponse: " + response.toString());
+                realm.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute(Realm realm) {
+                        RealmResults<SingleLocation> result = realm.where(SingleLocation.class).equalTo("assignedIndex", id).findAll();
+                        if (result.deleteAllFromRealm()) {
+                            Log.d(TAG, "execute: Delete SuccessFully");
+                        }
+                    }
+                });
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(TAG, "onErrorResponse: " + error.getMessage());
+                error.printStackTrace();
+            }
+        });
+        requestQueue.add(jsonObjectRequest);
+    }
+
+    public void readyToAddFromDb() {
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                RealmQuery<SingleLocation> singleLocationRealmQuery = realm.where(SingleLocation.class);
+                RealmResults<SingleLocation> allPins = singleLocationRealmQuery.findAll();
+                cropImageView.addViewDirectly(allPins);
+            }
+        });
     }
 
     private void setUpData() {
@@ -260,46 +313,20 @@ public class MainActivity extends AppCompatActivity {
         requestQueue.add(jsonObjectRequest);
     }
 
-    public void deleteSingleBeacon(final int id) {
-        String deleteUrl = BuildVars.API_POINT + "?delete_beacon=true&id=" + id;
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, deleteUrl, null, new Response.Listener<JSONObject>() {
+    @Override
+    public void onBackPressed() {
+        if (doubleBackToExitPressedOnce) {
+            super.onBackPressed();
+            return;
+        }
+        this.doubleBackToExitPressedOnce = true;
+        Toast.makeText(this, "Please click BACK again to exit", Toast.LENGTH_SHORT).show();
+        new Handler().postDelayed(new Runnable() {
             @Override
-            public void onResponse(JSONObject response) {
-                Log.d(TAG, "onResponse: " + response.toString());
-                realm.executeTransaction(new Realm.Transaction() {
-                    @Override
-                    public void execute(Realm realm) {
-                        RealmResults<SingleLocation> result = realm.where(SingleLocation.class).equalTo("assignedIndex", id).findAll();
-                        if (result.deleteAllFromRealm()) {
-                            Log.d(TAG, "execute: Delete SuccessFully");
-                        }
-                    }
-                });
+            public void run() {
+                doubleBackToExitPressedOnce = false;
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e(TAG, "onErrorResponse: " + error.getMessage());
-                error.printStackTrace();
-            }
-        });
-        requestQueue.add(jsonObjectRequest);
-    }
-
-    public void readyToAddFromDb() {
-        realm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                RealmQuery<SingleLocation> singleLocationRealmQuery = realm.where(SingleLocation.class);
-                RealmResults<SingleLocation> allPins = singleLocationRealmQuery.findAll();
-                cropImageView.addViewDirectly(allPins);
-            }
-        });
-    }
-
-    private void setupEstimote() {
-        EstimoteSDK.initialize(applicationContext, BuildVars.APP_ID, BuildVars.APP_TOKEN);
-        EstimoteSDK.enableDebugLogging(true);
+        }, 2000);
     }
 
     @Override
@@ -326,21 +353,5 @@ public class MainActivity extends AppCompatActivity {
                 });
         AlertDialog alert = builder.create();
         alert.show();
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (doubleBackToExitPressedOnce) {
-            super.onBackPressed();
-            return;
-        }
-        this.doubleBackToExitPressedOnce = true;
-        Toast.makeText(this, "Please click BACK again to exit", Toast.LENGTH_SHORT).show();
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                doubleBackToExitPressedOnce = false;
-            }
-        }, 2000);
     }
 }
