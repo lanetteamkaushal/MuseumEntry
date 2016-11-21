@@ -8,7 +8,7 @@
                 android:key="power_preference"
                 android:title="@string/label_range"
                 android:summary="@string/select_range"
-                android:defaultValue="7m"
+                android:defaultValue="-8"
                 android:entries="@array/list_pref_range"
                 android:entryValues="@array/list_pref_power"/>
     </PreferenceCategory>

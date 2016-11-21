@@ -446,9 +446,9 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
     private void checkForTrue() {
         progressDialog.setTitle(R.string.writing_settings);
         progressDialog.setMessage(getString(R.string.please_wait));
-        String urlToCall = String.format(BuildVars.API_POINT + "?check_insert=true&beaconId=%1$s&floorName=%2$s", etStickerNo.getText().toString(), String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition())));
+        String urlToCall = String.format(BuildVars.API_POINT_OLD + "?check_insert=true&beaconId=%1$s&floorName=%2$s", etStickerNo.getText().toString(), String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition())));
         if (location != null && location.isSaved() && location.getAssignedIndex() > 0) {
-            urlToCall = String.format(BuildVars.API_POINT + "?check_update=true&beaconId=%1$s&floorName=%2$s&id=%3$s",
+            urlToCall = String.format(BuildVars.API_POINT_OLD + "?check_update=true&beaconId=%1$s&floorName=%2$s&id=%3$s",
                     etStickerNo.getText().toString(), String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition())), location.getAssignedIndex());
         }
         Log.d(TAG, "checkForTrue: URL TO CHECK :" + urlToCall);
@@ -525,13 +525,13 @@ public class BeaconDetailEntry extends AppCompatActivity implements View.OnClick
                 });
         AlertDialog alert = builder.create();
         alert.show();
-        String url = String.format(BuildVars.API_POINT + "?add_beacon=true" +
+        String url = String.format(BuildVars.API_POINT_OLD + "?add_beacon=true" +
                         "&beaconName=%1$s&beaconId=%2$s&xPercentage=%3$s&yPercentage=%4$s&floorName=%5$s&isLocation=%6$s",
                 Uri.encode(etUserName.getText().toString()), etStickerNo.getText().toString(), rightPercent, bottomPercent
                 , String.valueOf(tagsFloorsIds.get(spFloor.getSelectedItemPosition()))
                 , isLocationEntry);
         if (location != null && location.isSaved() && location.getAssignedIndex() > 0) {
-            url = String.format(BuildVars.API_POINT + "?update_beacon=true"
+            url = String.format(BuildVars.API_POINT_OLD + "?update_beacon=true"
                             + "&id=%1$s"
                             + "&beaconName=%2$s&beaconId=%3$s&xPercentage=%4$s&yPercentage=%5$s&floorName=%6$s",
                     location.getAssignedIndex(),

@@ -298,7 +298,10 @@ public class DragFrameLayout extends FrameLayout {
             SingleLocation singleLocation = allPins.get(i);
             DImageView iv_sticker = new DImageView(getContext());
             iv_sticker.setId(singleLocation.getvIndex());
-            iv_sticker.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_location));
+            if (singleLocation.isLocationBeacon())
+                iv_sticker.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_location));
+            else
+                iv_sticker.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_location));
             iv_sticker.setScaleType(ImageView.ScaleType.FIT_END);
             FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(AndroidUtilities.dp(32), AndroidUtilities.dp(32));
 

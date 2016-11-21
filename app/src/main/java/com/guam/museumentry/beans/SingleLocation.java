@@ -25,16 +25,24 @@ public class SingleLocation extends RealmObject implements Parcelable {
     };
 
     int assignedIndex;
+    /***
+     * Beacon Major ID Key name :- storeId
+     */
     int floorNumber;
     @PrimaryKey
     int vIndex;
+    /***
+     * Beacon Minor ID Key name :- storeLocator
+     */
     String beaconID;
     String userName;
     float rightPercentage;
     float bottomPercentage;
     boolean isSaved;
+    boolean isLocationBeacon;
 
     public SingleLocation() {
+
     }
 
     protected SingleLocation(Parcel in) {
@@ -42,6 +50,14 @@ public class SingleLocation extends RealmObject implements Parcelable {
         this.userName = in.readString();
         this.rightPercentage = in.readFloat();
         this.bottomPercentage = in.readFloat();
+    }
+
+    public boolean isLocationBeacon() {
+        return isLocationBeacon;
+    }
+
+    public void setLocationBeacon(boolean locationBeacon) {
+        isLocationBeacon = locationBeacon;
     }
 
     public int getvIndex() {

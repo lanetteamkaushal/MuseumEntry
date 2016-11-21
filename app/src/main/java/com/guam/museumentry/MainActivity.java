@@ -27,6 +27,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.estimote.sdk.EstimoteSDK;
 import com.estimote.sdk.SystemRequirementsChecker;
@@ -177,10 +178,12 @@ public class MainActivity extends AppCompatActivity {
         cropImageView.setBackgroundDrawable(new BitmapDrawable(getResources(), bitmap));
         requestQueue = Volley.newRequestQueue(this);
         String checkUrl = BuildVars.API_POINT + "?check_data=true";
-        JsonObjectRequest checkRequest = new JsonObjectRequest(Request.Method.GET, checkUrl, null, new Response.Listener<JSONObject>() {
+        StringRequest checkRequest = new StringRequest(Request.Method.GET, checkUrl, new Response.Listener<String>() {
             @Override
-            public void onResponse(JSONObject response) {
+            public void onResponse(String response1) {
                 try {
+                    Log.d(TAG, "onResponse() called with: response1 = [" + response1 + "]");
+                    JSONObject response = new JSONObject(response1);
                     VersionCount = response.getJSONArray("museum_data").getJSONObject(0).optInt("count", -1);
                     if (Storage.getInteger(getApplicationContext(), "versionCount") == VersionCount) {
                         readyToAddFromDb();
@@ -209,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void deleteSingleBeacon(final int id) {
-        String deleteUrl = BuildVars.API_POINT + "?delete_beacon=true&id=" + id;
+        String deleteUrl = BuildVars.API_POINT_OLD + "?delete_beacon=true&id=" + id;
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, deleteUrl, null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
@@ -251,66 +254,96 @@ public class MainActivity extends AppCompatActivity {
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
-                if (response.has("museum_data")) {
+                if (response.has("beacon_data")) {
                     try {
-                        JSONArray museumData = response.getJSONArray("museum_data");
+                        JSONArray museumData = response.getJSONArray("beacon_data");
                         SingleLocation singleLocation;
                         for (int i = 0; i < museumData.length(); i++) {
                             JSONObject jsonObject = museumData.getJSONObject(i);
                             singleLocation = new SingleLocation();//  realm.createObject(SingleLocation.class);
                             singleLocation.setSaved(true);
-                            singleLocation.setAssignedIndex(Integer.parseInt(jsonObject.optString("Id")));
+                            singleLocation.setAssignedIndex(Integer.parseInt(jsonObject.optString("id")));
                             singleLocation.setUserName(jsonObject.optString("beaconName"));
-                            singleLocation.setBeaconID(jsonObject.optString("beaconId"));
+                            singleLocation.setBeaconID(jsonObject.optString("storeLocator"));
                             singleLocation.setRightPercentage((float) jsonObject.optDouble("xPercentage"));
                             singleLocation.setBottomPercentage((float) jsonObject.optDouble("yPercentage"));
-                            singleLocation.setFloorNumber(jsonObject.optInt("FloorName"));
+                            singleLocation.setFloorNumber(jsonObject.optInt("storeId"));
+                            singleLocation.setvIndex(counter.incrementAndGet());
+                            singleLocation.setLocationBeacon(false);
+                            apiLocations.add(singleLocation);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (response.has("location_Data")) {
+                    try {
+                        JSONArray museumData = response.getJSONArray("location_Data");
+                        SingleLocation singleLocation;
+                        for (int i = 0; i < museumData.length(); i++) {
+                            JSONObject jsonObject = museumData.getJSONObject(i);
+                            singleLocation = new SingleLocation();//  realm.createObject(SingleLocation.class);
+                            singleLocation.setSaved(true);
+                            singleLocation.setAssignedIndex(Integer.parseInt(jsonObject.optString("id")));
+                            singleLocation.setUserName(jsonObject.optString("beaconName"));
+                            singleLocation.setBeaconID(jsonObject.optString("storeLocator"));
+                            singleLocation.setRightPercentage((float) jsonObject.optDouble("xPercentage"));
+                            singleLocation.setBottomPercentage((float) jsonObject.optDouble("yPercentage"));
+                            singleLocation.setFloorNumber(jsonObject.optInt("storeId"));
+                            singleLocation.setLocationBeacon(true);
                             singleLocation.setvIndex(counter.incrementAndGet());
                             apiLocations.add(singleLocation);
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                    if (apiLocations.size() > 0) {
-                        realm.executeTransaction(new Realm.Transaction() {
-                            @Override
-                            public void execute(Realm realm) {
-                                SingleLocation dbobject;
-                                //delete all current record and update new record
-                                realm.delete(SingleLocation.class);
-                                //End
-                                for (int i = 0; i < apiLocations.size(); i++) {
-                                    SingleLocation singleLocation = apiLocations.get(i);
-                                    RealmQuery<SingleLocation> singleLocationRealmQuery = realm.where(SingleLocation.class);
-                                    singleLocationRealmQuery.equalTo("assignedIndex", singleLocation.getAssignedIndex());
-                                    dbobject = singleLocationRealmQuery.findFirst();
-                                    if (dbobject != null) {
-                                        dbobject.setSaved(true);
-                                        dbobject.setAssignedIndex(singleLocation.getAssignedIndex());
-                                        dbobject.setUserName(singleLocation.getUserName());
-                                        dbobject.setBeaconID(singleLocation.getBeaconID());
-                                        dbobject.setRightPercentage(singleLocation.getRightPercentage());
-                                        dbobject.setBottomPercentage(singleLocation.getBottomPercentage());
-                                        dbobject.setFloorNumber(singleLocation.getFloorNumber());
-                                        realm.insertOrUpdate(dbobject);
-                                    } else {
-                                        realm.insert(singleLocation);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                    readyToAddFromDb();
                 }
+                doRest();
+
             }
+
+
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
                 Log.e(TAG, "onErrorResponse: " + error.getMessage());
-                readyToAddFromDb();
+                doRest();
             }
         });
         requestQueue.add(jsonObjectRequest);
+    }
+
+    private void doRest() {
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                SingleLocation dbobject;
+                //delete all current record and update new record
+                realm.delete(SingleLocation.class);
+                //End
+                for (int i = 0; i < apiLocations.size(); i++) {
+                    SingleLocation singleLocation = apiLocations.get(i);
+                    RealmQuery<SingleLocation> singleLocationRealmQuery = realm.where(SingleLocation.class);
+                    singleLocationRealmQuery.equalTo("assignedIndex", singleLocation.getAssignedIndex());
+                    dbobject = singleLocationRealmQuery.findFirst();
+                    if (dbobject != null) {
+                        dbobject.setSaved(true);
+                        dbobject.setAssignedIndex(singleLocation.getAssignedIndex());
+                        dbobject.setUserName(singleLocation.getUserName());
+                        dbobject.setBeaconID(singleLocation.getBeaconID());
+                        dbobject.setRightPercentage(singleLocation.getRightPercentage());
+                        dbobject.setBottomPercentage(singleLocation.getBottomPercentage());
+                        dbobject.setFloorNumber(singleLocation.getFloorNumber());
+                        dbobject.setLocationBeacon(singleLocation.isLocationBeacon());
+                        realm.insertOrUpdate(dbobject);
+                    } else {
+                        realm.insert(singleLocation);
+                    }
+                }
+            }
+        });
+
+        readyToAddFromDb();
     }
 
     @Override
